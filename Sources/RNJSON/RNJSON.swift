@@ -65,19 +65,12 @@ public extension JSON {
         return value
     }
 
-    func doubleValue() throws -> Double {
-        try numberValue().doubleValue
-    }
+    func doubleValue() throws -> Double { try numberValue().doubleValue }
+    func intValue() throws -> Int { try numberValue().intValue }
+    func decimalValue() throws -> Decimal { try numberValue().decimalValue }
 
-    func intValue() throws -> Int {
-        try numberValue().intValue
-    }
+    init(_ value: NSNumber) { self = .number(value) }
 
-    func decimalValue() throws -> Decimal {
-        try numberValue().decimalValue
-    }
-
-    init(_ value: NSNumber)   { self = .number(value) }
     init(_ value: Int8)   { self.init(value as NSNumber) }
     init(_ value: Double) { self.init(value as NSNumber) }
     init(_ value: Float)  { self.init(value as NSNumber) }
@@ -213,7 +206,7 @@ extension JSON: Decodable {
 
         else if var array = try? decoder.unkeyedContainer() {
             var result: [JSON] = []
-            for _ in 0..<(array.count ?? 0) {
+            while !array.isAtEnd {
                 result.append(try array.decode(JSON.self))
             }
             self = .array(result)
