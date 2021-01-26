@@ -153,10 +153,11 @@ public extension JSON {
     }
 
     subscript(index: Int) -> JSON {
-        switch self {
-        case .array(let array): return array[index]
-        default: preconditionFailure("Type mismatch")
-        }
+        guard let array = try? arrayValue(),
+              array.indices.contains(index)
+        else { return .null }
+
+        return array[index]
     }
 
     init(_ value: [JSON]) {
@@ -190,7 +191,7 @@ public extension JSON {
 // MARK: - Dynamic Member Lookup
 public extension JSON {
     subscript(dynamicMember member: String) -> JSON {
-        return self[member] ?? .null
+        self[member] ?? .null
     }
 }
 
