@@ -1,19 +1,19 @@
 import XCTest
 @testable import RNJSON
 
-struct Customer: Decodable {
+struct Customer: Decodable, Equatable {
    let personal: Personal
    let source: String
 }
 
-struct Personal: Decodable {
+struct Personal: Decodable, Equatable {
     let name: String
     let customer_id: String
     let misc: JSON
 }
 
 final class RNJSONTests: XCTestCase {
-    func testExample() throws {
+    func testSimple() throws {
         let json = Data("""
         {
             "personal": {
@@ -31,12 +31,23 @@ final class RNJSONTests: XCTestCase {
         }
         """.utf8)
 
+        let misc: [String: Any] = [
+            "active": "true",
+            "addons": [
+                "country": "USA",
+                "state": "Michigan"
+            ]
+        ]
+
+        let expected = Customer(personal: Personal(name: "John Doe",
+                                                   customer_id: "1234", misc: try JSON(misc)), source: "main")
+
         let parsed = try JSONDecoder().decode(Customer.self, from: json)
-        print(parsed.personal.misc)
+        XCTAssertEqual(parsed, expected)
 
     }
 
     static var allTests = [
-        ("testExample", testExample),
+        ("testSimple", testSimple),
     ]
 }

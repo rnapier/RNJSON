@@ -1,62 +1,146 @@
 import Foundation
 
 @dynamicMemberLookup
-enum JSON: Codable, CustomStringConvertible {
-    var description: String {
-        switch self {
-        case .string(let string): return "\"\(string)\""
-        case .number(let double):
-            if let int = Int(exactly: double) {
-                return "\(int)"
-            } else {
-                return "\(double)"
-            }
-        case .object(let object):
-            let keyValues = object
-                .map { (key, value) in "\"\(key)\": \(value)" }
-                .joined(separator: ",")
-            return "{\(keyValues)}"
-        case .array(let array):
-            return "\(array)"
-        case .bool(let bool):
-            return "\(bool)"
-        case .null:
-            return "null"
-        }
-    }
-
-    var isEmpty: Bool {
-        switch self {
-        case .string(let string): return string.isEmpty
-        case .object(let object): return object.isEmpty
-        case .array(let array): return array.isEmpty
-        case .null: return true
-        case .number, .bool: return false
-        }
-    }
-
-    struct Key: CodingKey, Hashable, CustomStringConvertible {
-        var description: String {
-            return stringValue
-        }
-
-        let stringValue: String
-        init(_ string: String) { self.stringValue = string }
-        init?(stringValue: String) { self.init(stringValue) }
-        var intValue: Int? { return nil }
-        init?(intValue: Int) { return nil }
-    }
-
+public enum JSON: Hashable {
     case string(String)
-    case number(Double) // FIXME: Split Int and Double
+    case number(NSNumber)
+    case bool(Bool)
     case object([Key: JSON])
     case array([JSON])
-    case bool(Bool)
     case null
+}
 
-    init(from decoder: Decoder) throws {
+// MARK: - Errors
+public extension JSON {
+    enum Error: Swift.Error {
+        case typeMismatch
+    }
+}
+
+// MARK: - CodingKey
+public extension JSON {
+    struct Key: CodingKey, Hashable, CustomStringConvertible {
+        public var description: String { stringValue }
+
+        public let stringValue: String
+        public init(_ string: String) { self.stringValue = string }
+        public init?(stringValue: String) { self.init(stringValue) }
+        public var intValue: Int? { nil }
+        public init?(intValue: Int) { nil }
+    }
+}
+
+// MARK: - String
+public extension JSON {
+    var isString: Bool {
+        if case .string = self { return true } else { return false }
+    }
+
+    func stringValue() throws -> String {
+        guard case .string(let value) = self else { throw Error.typeMismatch }
+        return value
+    }
+}
+
+// MARK: - Number
+public extension JSON {
+    var isNumber: Bool {
+        if case .number = self { return true } else { return false }
+    }
+
+    func numberValue() throws -> NSNumber {
+        guard case .number(let value) = self else { throw Error.typeMismatch }
+        return value
+    }
+
+    func doubleValue() throws -> Double {
+        try numberValue().doubleValue
+    }
+
+    func intValue() throws -> Int {
+        try numberValue().intValue
+    }
+
+    func decimalValue() throws -> Decimal {
+        try numberValue().decimalValue
+    }
+}
+
+// MARK: - Bool
+public extension JSON {
+    var isBool: Bool {
+        if case .bool = self { return true } else { return false }
+    }
+
+    func boolValue() throws -> Bool {
+        guard case .bool(let value) = self else { throw Error.typeMismatch }
+        return value
+    }
+}
+
+// MARK: - Object
+public extension JSON {
+    var isObject: Bool {
+        if case .object = self { return true } else { return false }
+    }
+
+    func objectValue() throws -> [String: JSON] {
+        guard case .object(let value) = self else { throw Error.typeMismatch }
+        return Dictionary(uniqueKeysWithValues:
+                            value.map { (key, value) in (key.stringValue, value) })
+    }
+
+    subscript(key: String) -> JSON? {
+        guard let jsonKey = Key(stringValue: key),
+              case .object(let object) = self,
+              let value = object[jsonKey]
+        else { return nil }
+        return value
+    }
+}
+
+// MARK: - Array
+public extension JSON {
+    var isArray: Bool {
+        if case .array = self { return true } else { return false }
+    }
+
+    func arrayValue() throws -> [JSON] {
+        guard case .array(let value) = self else { throw Error.typeMismatch }
+        return value
+    }
+
+    subscript(index: Int) -> JSON {
+        switch self {
+        case .array(let array): return array[index]
+        default: preconditionFailure("Type mismatch")
+        }
+    }
+}
+
+// MARK: - Null
+public extension JSON {
+    var isNull: Bool {
+        if case .null = self { return true } else { return false }
+    }
+}
+
+// MARK: - Dynamic Member Lookup
+public extension JSON {
+    subscript(dynamicMember member: String) -> JSON {
+        return self[member] ?? .null
+    }
+}
+
+// MARK: - Decodable
+extension JSON: Decodable {
+    public init(from decoder: Decoder) throws {
         if let string = try? decoder.singleValueContainer().decode(String.self) { self = .string(string) }
-        else if let number = try? decoder.singleValueContainer().decode(Double.self) { self = .number(number) }
+
+        else if let number = try? decoder.singleValueContainer().decode(Decimal.self) { self = .number(number as NSNumber) }
+
+        else if let bool = try? decoder.singleValueContainer().decode(Bool.self) { self = .bool(bool) }
+
         else if let object = try? decoder.container(keyedBy: Key.self) {
             var result: [Key: JSON] = [:]
             for key in object.allKeys {
@@ -64,6 +148,7 @@ enum JSON: Codable, CustomStringConvertible {
             }
             self = .object(result)
         }
+
         else if var array = try? decoder.unkeyedContainer() {
             var result: [JSON] = []
             for _ in 0..<(array.count ?? 0) {
@@ -71,133 +156,82 @@ enum JSON: Codable, CustomStringConvertible {
             }
             self = .array(result)
         }
-        else if let bool = try? decoder.singleValueContainer().decode(Bool.self) { self = .bool(bool) }
+
         else if let isNull = try? decoder.singleValueContainer().decodeNil(), isNull { self = .null }
+
         else { throw DecodingError.dataCorrupted(DecodingError.Context(codingPath: [],
                                                                        debugDescription: "Unknown JSON type")) }
     }
+}
 
-    func encode(to encoder: Encoder) throws {
+// MARK: - Encodable
+extension JSON: Encodable {
+    public func encode(to encoder: Encoder) throws {
         switch self {
+
         case .string(let string):
             var container = encoder.singleValueContainer()
             try container.encode(string)
+
         case .number(let number):
             var container = encoder.singleValueContainer()
-            try container.encode(number)
+            try container.encode(number.decimalValue)
+
         case .bool(let bool):
             var container = encoder.singleValueContainer()
             try container.encode(bool)
+
         case .object(let object):
             var container = encoder.container(keyedBy: Key.self)
             for (key, value) in object {
                 try container.encode(value, forKey: key)
             }
+
         case .array(let array):
             var container = encoder.unkeyedContainer()
             for value in array {
                 try container.encode(value)
             }
+
         case .null:
             var container = encoder.singleValueContainer()
             try container.encodeNil()
         }
     }
+}
 
-    var objectValue: [String: JSON]? {
+// MARK: - CustomStringConvertible
+extension JSON: CustomStringConvertible {
+    public var description: String {
         switch self {
+        case .string(let string): return "\"\(string)\""
+
+        case .number(let number): return "\(number)"
+
+        case .bool(let bool): return "\(bool)"
+
         case .object(let object):
-            let mapped: [String: JSON] = Dictionary(uniqueKeysWithValues:
-                object.map { (key, value) in (key.stringValue, value) })
-            return mapped
-        default: return nil
+            let keyValues = object
+                .map { (key, value) in "\"\(key)\": \(value)" }
+                .joined(separator: ",")
+            return "{\(keyValues)}"
+
+        case .array(let array): return "\(array)"
+
+        case .null: return "null"
         }
-    }
-
-    var arrayValue: [JSON]? {
-        switch self {
-        case .array(let array): return array
-        default: return nil
-        }
-    }
-
-    subscript(key: String) -> JSON? {
-        guard let jsonKey = Key(stringValue: key),
-            case .object(let object) = self,
-            let value = object[jsonKey]
-            else { return nil }
-        return value
-    }
-
-    var stringValue: String? {
-        switch self {
-        case .string(let string): return string
-        default: return nil
-        }
-    }
-
-    var doubleValue: Double? {
-        switch self {
-        case .number(let number): return number
-        default: return nil
-        }
-    }
-
-    var intValue: Int? {
-        switch self {
-        case .number(let number): return Int(number)
-        default: return nil
-        }
-    }
-
-    subscript(index: Int) -> JSON? {
-        switch self {
-        case .array(let array): return array[index]
-        default: return nil
-        }
-    }
-
-    var boolValue: Bool? {
-        switch self {
-        case .bool(let bool): return bool
-        default: return nil
-        }
-    }
-
-    var anyValue: Any? {
-        switch self {
-        case .string(let string): return string
-        case .number(let number):
-            if let int = Int(exactly: number) { return int }
-            else { return number }
-        case .bool(let bool): return bool
-        case .object(let object):
-            return Dictionary(uniqueKeysWithValues:
-                object.compactMap { (key, value) -> (String, Any)? in
-                    if let nonNilValue = value.anyValue {
-                        return (key.stringValue, nonNilValue)
-                    } else { return nil }
-                })
-        case .array(let array):
-            return array.compactMap{ $0.anyValue }
-        case .null:
-            return nil
-        }
-    }
-
-    var dictionaryValue: [String: Any]? {
-        return anyValue as? [String: Any]
-    }
-
-    subscript(dynamicMember member: String) -> JSON {
-        return self[member] ?? .null
     }
 }
 
-extension JSON {
+// MARK: - Any
+public extension JSON {
     init(_ value: Any) throws {
         if let string = value as? String { self = .string(string) }
-        else if let number = value as? NSNumber { self = .number(number.doubleValue) }
+
+        else if let number = value as? NSNumber { self = .number(number) }
+
+        else if let bool = value as? Bool { self = .bool(bool) }
+
         else if let object = value as? [String: Any] {
             var result: [Key: JSON] = [:]
             for (key, subvalue) in object {
@@ -205,20 +239,30 @@ extension JSON {
             }
             self = .object(result)
         }
+
         else if let array = value as? [Any] {
             self = .array(try array.map(JSON.init))
         }
-        else if let bool = value as? Bool { self = .bool(bool) }
+
+        else if value is NSNull { self = .null }
+
         else {
             throw EncodingError.invalidValue(value, EncodingError.Context(codingPath: [],
                                                                           debugDescription: "Cannot encode value"))
         }
     }
-}
 
-extension JSONEncoder {
-    func stringEncode<T>(_ value: T) throws -> String where T : Encodable {
-        // JSONEncoder promises to always return UTF-8
-        return String(data: try self.encode(value), encoding: .utf8)!
+    func anyValue() -> Any {
+        (try? stringValue()) ??
+            (try? numberValue()) ??
+            (try? boolValue()) ??
+            (try? objectValue()) ??
+            (try? arrayValue()) ??
+            NSNull()
+    }
+
+    func dictionaryValue() throws -> [String: Any] {
+        guard let value = anyValue() as? [String: Any] else { throw Error.typeMismatch }
+        return value
     }
 }
