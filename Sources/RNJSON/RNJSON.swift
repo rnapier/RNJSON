@@ -5,7 +5,7 @@ public enum JSON: Hashable {
     case string(String)
     case number(NSNumber)
     case bool(Bool)
-    case object([Key: JSON])
+    case object([String: JSON])
     case array([JSON])
     case null
 }
@@ -17,17 +17,19 @@ public extension JSON {
     }
 }
 
-// MARK: - CodingKey
-public extension JSON {
-    struct Key: CodingKey, Hashable, CustomStringConvertible {
-        public var description: String { stringValue }
+// MARK: - StringKey
+private struct StringKey: CodingKey, Hashable, Comparable, CustomStringConvertible, ExpressibleByStringLiteral {
+    public var description: String { stringValue }
 
-        public let stringValue: String
-        public init(_ string: String) { self.stringValue = string }
-        public init?(stringValue: String) { self.init(stringValue) }
-        public var intValue: Int? { nil }
-        public init?(intValue: Int) { nil }
-    }
+    public let stringValue: String
+    public init(_ string: String) { self.stringValue = string }
+    public init?(stringValue: String) { self.init(stringValue) }
+    public var intValue: Int? { nil }
+    public init?(intValue: Int) { nil }
+
+    public static func < (lhs: StringKey, rhs: StringKey) -> Bool { lhs.stringValue < rhs.stringValue }
+
+    public init(stringLiteral value: String) { self.init(value) }
 }
 
 // MARK: - String
@@ -39,6 +41,16 @@ public extension JSON {
     func stringValue() throws -> String {
         guard case .string(let value) = self else { throw Error.typeMismatch }
         return value
+    }
+
+    init(_ value: String) {
+        self = .string(value)
+    }
+}
+
+extension JSON: ExpressibleByStringLiteral {
+    public init(stringLiteral value: String) {
+        self = .string(value)
     }
 }
 
@@ -64,6 +76,25 @@ public extension JSON {
     func decimalValue() throws -> Decimal {
         try numberValue().decimalValue
     }
+
+    init(_ value: NSNumber)   { self = .number(value) }
+    init(_ value: Int8)   { self.init(value as NSNumber) }
+    init(_ value: Double) { self.init(value as NSNumber) }
+    init(_ value: Float)  { self.init(value as NSNumber) }
+    init(_ value: Int32)  { self.init(value as NSNumber) }
+    init(_ value: Int)    { self.init(value as NSNumber) }
+    init(_ value: Int64)  { self.init(value as NSNumber) }
+    init(_ value: Int16)  { self.init(value as NSNumber) }
+    init(_ value: UInt8)  { self.init(value as NSNumber) }
+    init(_ value: UInt32) { self.init(value as NSNumber) }
+    init(_ value: UInt)   { self.init(value as NSNumber) }
+    init(_ value: UInt64) { self.init(value as NSNumber) }
+    init(_ value: UInt16) { self.init(value as NSNumber) }
+}
+
+extension JSON: ExpressibleByIntegerLiteral, ExpressibleByFloatLiteral {
+    public init(integerLiteral value: Int) { self.init(value) }
+    public init(floatLiteral value: Double) { self.init(value) }
 }
 
 // MARK: - Bool
@@ -76,6 +107,10 @@ public extension JSON {
         guard case .bool(let value) = self else { throw Error.typeMismatch }
         return value
     }
+
+    init(_ value: Bool) {
+        self = .bool(value)
+    }
 }
 
 // MARK: - Object
@@ -86,18 +121,25 @@ public extension JSON {
 
     func objectValue() throws -> [String: JSON] {
         guard case .object(let value) = self else { throw Error.typeMismatch }
-        return Dictionary(uniqueKeysWithValues:
-                            value.map { (key, value) in (key.stringValue, value) })
+        return value
     }
 
     subscript(key: String) -> JSON? {
-        guard let jsonKey = Key(stringValue: key),
-              case .object(let object) = self,
-              let value = object[jsonKey]
-        else { return nil }
-        return value
+        try? objectValue()[key]
+    }
+
+    init(_ value: [String: JSON]) {
+        self = .object(value)
     }
 }
+
+extension JSON: ExpressibleByDictionaryLiteral {
+    public init(dictionaryLiteral elements: (String, JSON)...) {
+        self.init(Dictionary(uniqueKeysWithValues: elements))
+    }
+}
+
+public typealias JSONObject = [String: JSON]
 
 // MARK: - Array
 public extension JSON {
@@ -116,6 +158,16 @@ public extension JSON {
         default: preconditionFailure("Type mismatch")
         }
     }
+
+    init(_ value: [JSON]) {
+        self = .array(value)
+    }
+}
+
+extension JSON: ExpressibleByArrayLiteral {
+    public init(arrayLiteral elements: JSON...) {
+        self.init(elements)
+    }
 }
 
 // MARK: - Null
@@ -123,7 +175,17 @@ public extension JSON {
     var isNull: Bool {
         if case .null = self { return true } else { return false }
     }
+
+    init(_ value: NSNull) {
+        self = .null
+    }
 }
+
+//extension JSON: ExpressibleByNilLiteral {
+//    public init(nilLiteral: Void) {
+//        self.init(NSNull())
+//    }
+//}
 
 // MARK: - Dynamic Member Lookup
 public extension JSON {
@@ -141,12 +203,11 @@ extension JSON: Decodable {
 
         else if let bool = try? decoder.singleValueContainer().decode(Bool.self) { self = .bool(bool) }
 
-        else if let object = try? decoder.container(keyedBy: Key.self) {
-            var result: [Key: JSON] = [:]
-            for key in object.allKeys {
-                result[key] = (try? object.decode(JSON.self, forKey: key)) ?? .null
+        else if let object = try? decoder.container(keyedBy: StringKey.self) {
+            let pairs = try object.allKeys.map(\.stringValue).map { key in
+                (key, try object.decode(JSON.self, forKey: StringKey(key)))
             }
-            self = .object(result)
+            self = .object(Dictionary(uniqueKeysWithValues: pairs))
         }
 
         else if var array = try? decoder.unkeyedContainer() {
@@ -182,9 +243,9 @@ extension JSON: Encodable {
             try container.encode(bool)
 
         case .object(let object):
-            var container = encoder.container(keyedBy: Key.self)
-            for (key, value) in object {
-                try container.encode(value, forKey: key)
+            var container = encoder.container(keyedBy: StringKey.self)
+            for key in object.keys.sorted() {
+                try container.encode(object[key], forKey: StringKey(key))
             }
 
         case .array(let array):
@@ -225,7 +286,7 @@ extension JSON: CustomStringConvertible {
 
 // MARK: - Any
 public extension JSON {
-    init(_ value: Any) throws {
+    init(withAny value: Any) throws {
         if let string = value as? String { self = .string(string) }
 
         else if let number = value as? NSNumber { self = .number(number) }
@@ -233,15 +294,11 @@ public extension JSON {
         else if let bool = value as? Bool { self = .bool(bool) }
 
         else if let object = value as? [String: Any] {
-            var result: [Key: JSON] = [:]
-            for (key, subvalue) in object {
-                result[Key(key)] = try JSON(subvalue)
-            }
-            self = .object(result)
+            self = .object(try object.mapValues(JSON.init(withAny:)))
         }
 
         else if let array = value as? [Any] {
-            self = .array(try array.map(JSON.init))
+            self = .array(try array.map(JSON.init(withAny:)))
         }
 
         else if value is NSNull { self = .null }
