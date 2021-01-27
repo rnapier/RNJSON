@@ -281,39 +281,37 @@ extension JSON: CustomStringConvertible {
 // MARK: - Any
 public extension JSON {
     init(withAny value: Any) throws {
-        if let string = value as? String { self = .string(string) }
-
-        else if let number = value as? NSNumber { self = .number(number) }
-
-        else if let bool = value as? Bool { self = .bool(bool) }
-
-        else if let object = value as? [String: Any] {
-            self = .object(try object.mapValues(JSON.init(withAny:)))
-        }
-
-        else if let array = value as? [Any] {
-            self = .array(try array.map(JSON.init(withAny:)))
-        }
-
-        else if value is NSNull { self = .null }
-
-        else {
+        switch value {
+        case let json as JSON: self = json
+        case let string as String: self = JSON(string)
+        case let number as NSNumber: self = JSON(number)
+        case let bool as Bool: self = JSON(bool)
+        case let object as [String: Any]: self = JSON(try object.mapValues(JSON.init(withAny:)))
+        case let array as [Any]: self = JSON(try array.map(JSON.init(withAny:)))
+        case is NSNull: self = .null
+        default:
             throw EncodingError.invalidValue(value, EncodingError.Context(codingPath: [],
                                                                           debugDescription: "Cannot encode value"))
         }
     }
 
-    func anyValue() -> Any {
-        (try? stringValue()) ??
-            (try? numberValue()) ??
-            (try? boolValue()) ??
-            (try? objectValue()) ??
-            (try? arrayValue()) ??
-            NSNull()
+    func anyDictionary() throws -> [String: Any] {
+        try objectValue().mapValues(JSON.anyValue)
     }
 
-    func dictionaryValue() throws -> [String: Any] {
-        guard let value = anyValue() as? [String: Any] else { throw Error.typeMismatch }
-        return value
+    func anyArray() throws -> [Any] {
+        try arrayValue().map(JSON.anyValue)
     }
+
+    func anyValue() throws -> Any {
+        switch self {
+        case .string(let value): return value
+        case .number(let value): return value
+        case .bool(let value): return value
+        case .object(let object): return object.mapValues(JSON.anyValue)
+        case .array(let array): return array.map(JSON.anyValue)
+        case .null: return NSNull()
+        }
+    }
+
 }
