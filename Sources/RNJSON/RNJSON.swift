@@ -1,17 +1,17 @@
 import Foundation
 
 @dynamicMemberLookup
-public enum JSON: Hashable {
+public enum RNJSON: Hashable {
     case string(String)
     case number(NSNumber)
     case bool(Bool)
-    case object([String: JSON])
-    case array([JSON])
+    case object([String: RNJSON])
+    case array([RNJSON])
     case null
 }
 
 // MARK: - Errors
-public extension JSON {
+public extension RNJSON {
     enum Error: Swift.Error {
         case typeMismatch
     }
@@ -33,7 +33,7 @@ private struct StringKey: CodingKey, Hashable, Comparable, CustomStringConvertib
 }
 
 // MARK: - String
-public extension JSON {
+public extension RNJSON {
     var isString: Bool {
         if case .string = self { return true } else { return false }
     }
@@ -48,14 +48,14 @@ public extension JSON {
     }
 }
 
-extension JSON: ExpressibleByStringLiteral {
+extension RNJSON: ExpressibleByStringLiteral {
     public init(stringLiteral value: String) {
         self = .string(value)
     }
 }
 
 // MARK: - Number
-public extension JSON {
+public extension RNJSON {
     var isNumber: Bool {
         if case .number = self { return true } else { return false }
     }
@@ -85,13 +85,13 @@ public extension JSON {
     init(_ value: UInt16) { self.init(value as NSNumber) }
 }
 
-extension JSON: ExpressibleByIntegerLiteral, ExpressibleByFloatLiteral {
+extension RNJSON: ExpressibleByIntegerLiteral, ExpressibleByFloatLiteral {
     public init(integerLiteral value: Int) { self.init(value) }
     public init(floatLiteral value: Double) { self.init(value) }
 }
 
 // MARK: - Bool
-public extension JSON {
+public extension RNJSON {
     var isBool: Bool {
         if case .bool = self { return true } else { return false }
     }
@@ -107,45 +107,45 @@ public extension JSON {
 }
 
 // MARK: - Object
-public extension JSON {
+public extension RNJSON {
     var isObject: Bool {
         if case .object = self { return true } else { return false }
     }
 
-    func objectValue() throws -> [String: JSON] {
+    func objectValue() throws -> [String: RNJSON] {
         guard case .object(let value) = self else { throw Error.typeMismatch }
         return value
     }
 
-    subscript(key: String) -> JSON? {
+    subscript(key: String) -> RNJSON? {
         try? objectValue()[key]
     }
 
-    init(_ value: [String: JSON]) {
+    init(_ value: [String: RNJSON]) {
         self = .object(value)
     }
 }
 
-extension JSON: ExpressibleByDictionaryLiteral {
-    public init(dictionaryLiteral elements: (String, JSON)...) {
+extension RNJSON: ExpressibleByDictionaryLiteral {
+    public init(dictionaryLiteral elements: (String, RNJSON)...) {
         self.init(Dictionary(uniqueKeysWithValues: elements))
     }
 }
 
-public typealias JSONObject = [String: JSON]
+public typealias JSONObject = [String: RNJSON]
 
 // MARK: - Array
-public extension JSON {
+public extension RNJSON {
     var isArray: Bool {
         if case .array = self { return true } else { return false }
     }
 
-    func arrayValue() throws -> [JSON] {
+    func arrayValue() throws -> [RNJSON] {
         guard case .array(let value) = self else { throw Error.typeMismatch }
         return value
     }
 
-    subscript(index: Int) -> JSON {
+    subscript(index: Int) -> RNJSON {
         guard let array = try? arrayValue(),
               array.indices.contains(index)
         else { return .null }
@@ -153,19 +153,19 @@ public extension JSON {
         return array[index]
     }
 
-    init(_ value: [JSON]) {
+    init(_ value: [RNJSON]) {
         self = .array(value)
     }
 }
 
-extension JSON: ExpressibleByArrayLiteral {
-    public init(arrayLiteral elements: JSON...) {
+extension RNJSON: ExpressibleByArrayLiteral {
+    public init(arrayLiteral elements: RNJSON...) {
         self.init(elements)
     }
 }
 
 // MARK: - Null
-public extension JSON {
+public extension RNJSON {
     var isNull: Bool {
         if case .null = self { return true } else { return false }
     }
@@ -182,14 +182,14 @@ public extension JSON {
 //}
 
 // MARK: - Dynamic Member Lookup
-public extension JSON {
-    subscript(dynamicMember member: String) -> JSON {
+public extension RNJSON {
+    subscript(dynamicMember member: String) -> RNJSON {
         self[member] ?? .null
     }
 }
 
 // MARK: - Decodable
-extension JSON: Decodable {
+extension RNJSON: Decodable {
     public init(from decoder: Decoder) throws {
         if let string = try? decoder.singleValueContainer().decode(String.self) { self = .string(string) }
 
@@ -199,15 +199,15 @@ extension JSON: Decodable {
 
         else if let object = try? decoder.container(keyedBy: StringKey.self) {
             let pairs = try object.allKeys.map(\.stringValue).map { key in
-                (key, try object.decode(JSON.self, forKey: StringKey(key)))
+                (key, try object.decode(RNJSON.self, forKey: StringKey(key)))
             }
             self = .object(Dictionary(uniqueKeysWithValues: pairs))
         }
 
         else if var array = try? decoder.unkeyedContainer() {
-            var result: [JSON] = []
+            var result: [RNJSON] = []
             while !array.isAtEnd {
-                result.append(try array.decode(JSON.self))
+                result.append(try array.decode(RNJSON.self))
             }
             self = .array(result)
         }
@@ -220,7 +220,7 @@ extension JSON: Decodable {
 }
 
 // MARK: - Encodable
-extension JSON: Encodable {
+extension RNJSON: Encodable {
     public func encode(to encoder: Encoder) throws {
         switch self {
 
@@ -256,7 +256,7 @@ extension JSON: Encodable {
 }
 
 // MARK: - CustomStringConvertible
-extension JSON: CustomStringConvertible {
+extension RNJSON: CustomStringConvertible {
     public var description: String {
         switch self {
         case .string(let string): return "\"\(string)\""
@@ -279,15 +279,15 @@ extension JSON: CustomStringConvertible {
 }
 
 // MARK: - Any
-public extension JSON {
+public extension RNJSON {
     init(withAny value: Any) throws {
         switch value {
-        case let json as JSON: self = json
-        case let string as String: self = JSON(string)
-        case let number as NSNumber: self = JSON(number)
-        case let bool as Bool: self = JSON(bool)
-        case let object as [String: Any]: self = JSON(try object.mapValues(JSON.init(withAny:)))
-        case let array as [Any]: self = JSON(try array.map(JSON.init(withAny:)))
+        case let json as RNJSON: self = json
+        case let string as String: self = RNJSON(string)
+        case let number as NSNumber: self = RNJSON(number)
+        case let bool as Bool: self = RNJSON(bool)
+        case let object as [String: Any]: self = RNJSON(try object.mapValues(RNJSON.init(withAny:)))
+        case let array as [Any]: self = RNJSON(try array.map(RNJSON.init(withAny:)))
         case is NSNull: self = .null
         default:
             throw EncodingError.invalidValue(value, EncodingError.Context(codingPath: [],
@@ -296,11 +296,11 @@ public extension JSON {
     }
 
     func anyDictionary() throws -> [String: Any] {
-        try objectValue().mapValues(JSON.anyValue)
+        try objectValue().mapValues(RNJSON.anyValue)
     }
 
     func anyArray() throws -> [Any] {
-        try arrayValue().map(JSON.anyValue)
+        try arrayValue().map(RNJSON.anyValue)
     }
 
     func anyValue() throws -> Any {
@@ -308,10 +308,9 @@ public extension JSON {
         case .string(let value): return value
         case .number(let value): return value
         case .bool(let value): return value
-        case .object(let object): return object.mapValues(JSON.anyValue)
-        case .array(let array): return array.map(JSON.anyValue)
+        case .object(let object): return object.mapValues(RNJSON.anyValue)
+        case .array(let array): return array.map(RNJSON.anyValue)
         case .null: return NSNull()
         }
     }
-
 }
