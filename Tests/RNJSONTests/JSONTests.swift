@@ -25,7 +25,6 @@ extension JSONDecoder {
     }
 }
 
-
 final class RNJSONTests: XCTestCase {
     func testStringEncode() throws {
         let value = RNJSON("test")

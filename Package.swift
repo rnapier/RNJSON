@@ -23,6 +23,7 @@ let package = Package(
             dependencies: []),
         .testTarget(
             name: "RNJSONTests",
-            dependencies: ["RNJSON"]),
+            dependencies: ["RNJSON"],
+            resources: [Resource.copy("json.org")]),
     ]
 )

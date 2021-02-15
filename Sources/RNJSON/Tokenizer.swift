@@ -9,6 +9,10 @@ import Foundation
 
 // Tokenizer splits up Data into semantic components.
 // The resulting Tokens can be used to reconstruct the original JSON, including whitespace.
+// Tokenizer does the bare minimum required to tokenize. It does not validate that the JSON if valid. For
+// example, it does not parse strings; it just looks for a double-quote followed by a non-escaped
+// double-quote. This allows parsers to deal with many kinds of technically invalid JSON.
+
 public struct RNJSONTokenizer {
     public enum Error: Swift.Error {
         case unexpectedToken
@@ -56,7 +60,7 @@ public struct RNJSONTokenizer {
     }
 
     public struct TokenizeResult<Input: DataProtocol> {
-        var token: Token<Input>?
+        var token: Token<Input>
         var endIndex: Input.Index
     }
 
@@ -65,9 +69,10 @@ public struct RNJSONTokenizer {
     private let nullData = Data("null".utf8)
     private let whitespaceBytes: [UInt8] = [0x09, 0x0a, 0x0d, 0x20]
 
-    public func parseFirstToken<Input: DataProtocol>(from data: Input) throws -> TokenizeResult<Input> {
+    // Extracts first token, if complete. Returns nil if incomplete token is found. Throws for invalid token.
+    public func parseFirstToken<Input: DataProtocol>(from data: Input) throws -> TokenizeResult<Input>? {
         guard let byte = data.first else {
-            return TokenizeResult(token: nil, endIndex: data.startIndex)
+            return nil
         }
 
         switch byte {
@@ -95,14 +100,14 @@ public struct RNJSONTokenizer {
         case 0x66: // f(alse)
             return try extract(.literalFalse, byFinding: falseData, from: data)
 
-        case 0x6E: // n(null)
+        case 0x6E: // n(ull)
             return try extract(.literalNull, byFinding: nullData, from: data)
 
         case 0x22: // "
-            return try extractString(from: data)
+            return extractString(from: data)
 
         case 0x2d, 0x30...0x49: // -, 0-9
-            return try extractNumber(from: data)
+            return extractNumber(from: data)
 
         case 0x09, 0x0a, 0x0d, 0x20: // consume whitespace
             return extractWhitespace(from: data)
@@ -112,27 +117,32 @@ public struct RNJSONTokenizer {
         }
     }
 
-    private func extract<Input: DataProtocol>(_ token: Token<Input>, byFinding needle: Data, from data: Input) throws -> TokenizeResult<Input> {
-        guard data.count >= needle.count else {
-            return TokenizeResult(token: nil, endIndex: data.startIndex)
+    // data must begin with a prefix of needle, or this throws. data may be incomplete, so a partial prefix returns nil.
+    private func extract<Input: DataProtocol>(_ token: Token<Input>, byFinding needle: Data, from data: Input) throws -> TokenizeResult<Input>? {
+
+        // Check that the starting data matches needle
+        guard data.starts(with: needle.prefix(data.count)) else {  // true
+            throw Error.unexpectedToken
         }
 
-        guard data.starts(with: needle) else {  // true
-            throw Error.unexpectedToken
+        // Check that the complete needle is found
+        guard data.count >= needle.count else {
+            return nil
         }
 
         return TokenizeResult(token: token, endIndex: data.index(data.startIndex, offsetBy: needle.count))
     }
 
-    private func extractString<Input: DataProtocol>(from data: Input) throws -> TokenizeResult<Input> {
+    // Extracts a complete string. If the string is incomplete, return nil. Does not validate string
+    private func extractString<Input: DataProtocol>(from data: Input) -> TokenizeResult<Input>? {
         let startStringIndex = data.index(after: data.startIndex) // Drop leading "
 
         var index = startStringIndex
         LOOP: while index < data.endIndex {
             switch data[index] {
             case 0x5c: // \
-                // FIXME: Check valid escapes
-                // FIXME: Handle \uXXXX
+                // Don't worry about what the next character is. At this point, we're not validating
+                // the string, just looking for an unescaped double-quote.
                 if !data.formIndex(&index, offsetBy: 2, limitedBy: data.endIndex) {
                     // Couldn't advance by 2, so data ends in a \
                     break LOOP
@@ -149,10 +159,10 @@ public struct RNJSONTokenizer {
         }
 
         // Couldn't find end of string
-        return TokenizeResult(token: nil, endIndex: data.startIndex)
+        return nil
     }
 
-    private func extractNumber<Input: DataProtocol>(from data: Input) throws -> TokenizeResult<Input> {
+    private func extractNumber<Input: DataProtocol>(from data: Input) -> TokenizeResult<Input>? {
         fatalError()
     }
 
