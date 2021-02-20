@@ -7,39 +7,40 @@
 
 import Foundation
 
-public protocol RNJSONToken {
-    var length: Int { get }
-}
-
-// Default length
-public extension RNJSONToken {
-    var length: Int { 1 }
-}
-
-public protocol RNJSONLiteralToken: RNJSONToken {
-    var value: Data { get }
-}
-
-public extension RNJSONLiteralToken {
-    var length: Int { value.count }
-}
-
-public struct RNJSONTokenArrayOpen: RNJSONToken {}
-public struct RNJSONTokenArrayClose: RNJSONToken {}
-
-public struct RNJSONTokenObjectOpen: RNJSONToken {}
-public struct RNJSONTokenObjectClose: RNJSONToken {}
-
-public struct RNJSONTokenKeyValueSeparator: RNJSONToken {}
-public struct RNJSONTokenListSeparator: RNJSONToken {}
-
-public struct RNJSONTokenLiteralTrue: RNJSONLiteralToken { public var value: Data { Data("true".utf8) } }
-public struct RNJSONTokenLiteralFalse: RNJSONLiteralToken { public var value: Data { Data("false".utf8) } }
-public struct RNJSONTokenLiteralNull: RNJSONLiteralToken { public var value: Data { Data("null".utf8) } }
-
-public struct RNJSONTokenString: RNJSONToken { public var length: Int }
-public struct RNJSONTokenNumber: RNJSONToken { public var length: Int }
-public struct RNJSONTokenWhitespace: RNJSONToken { public var length: Int }
+//
+//public protocol RNJSONToken {
+//    var length: Int { get }
+//}
+//
+//// Default length
+//public extension RNJSONToken {
+//    var length: Int { 1 }
+//}
+//
+//public protocol RNJSONLiteralToken: RNJSONToken {
+//    var value: Data { get }
+//}
+//
+//public extension RNJSONLiteralToken {
+//    var length: Int { value.count }
+//}
+//
+//public struct RNJSONTokenArrayOpen: RNJSONToken {}
+//public struct RNJSONTokenArrayClose: RNJSONToken {}
+//
+//public struct RNJSONTokenObjectOpen: RNJSONToken {}
+//public struct RNJSONTokenObjectClose: RNJSONToken {}
+//
+//public struct RNJSONTokenKeyValueSeparator: RNJSONToken {}
+//public struct RNJSONTokenListSeparator: RNJSONToken {}
+//
+//public struct RNJSONTokenLiteralTrue: RNJSONLiteralToken { public var value: Data { Data("true".utf8) } }
+//public struct RNJSONTokenLiteralFalse: RNJSONLiteralToken { public var value: Data { Data("false".utf8) } }
+//public struct RNJSONTokenLiteralNull: RNJSONLiteralToken { public var value: Data { Data("null".utf8) } }
+//
+//public struct RNJSONTokenString: RNJSONToken { public var length: Int }
+//public struct RNJSONTokenNumber: RNJSONToken { public var length: Int }
+//public struct RNJSONTokenWhitespace: RNJSONToken { public var length: Int }
 
 // Tokenizer splits up Data into semantic components.
 // The resulting Tokens can be used to reconstruct the original JSON, including whitespace.
@@ -48,6 +49,21 @@ public struct RNJSONTokenWhitespace: RNJSONToken { public var length: Int }
 // double-quote. This allows parsers to deal with many kinds of technically invalid JSON.
 
 public struct RNJSONTokenizer {
+    public enum Token {
+        case arrayOpen
+        case arrayClose
+        case objectOpen
+        case objectClose
+        case keyValueSeparator
+        case listSeparator
+        case literalTrue
+        case literalFalse
+        case literalNull
+        case string(Data)
+        case number(Data)
+        case whitespace(Data)
+    }
+
     public enum Error: Swift.Error {
         case unexpectedToken
     }
@@ -62,38 +78,38 @@ public struct RNJSONTokenizer {
     ]
 
     // Extracts first token, if complete. Returns nil if incomplete token is found. Throws for invalid token.
-    public func parseFirstToken<Input: DataProtocol>(from data: Input) throws -> RNJSONToken? {
+    public func parseFirstToken<Input: DataProtocol>(from data: Input) throws -> Token? {
         guard let byte = data.first else {
             return nil
         }
 
         switch byte {
         case 0x5b: // [
-            return RNJSONTokenArrayOpen()
+            return .arrayOpen
 
         case 0x7b: // {
-            return RNJSONTokenObjectOpen()
+            return .objectOpen
 
         case 0x5d: // ]
-            return RNJSONTokenArrayClose()
+            return .arrayClose
 
         case 0x7d: // }
-            return RNJSONTokenObjectClose()
+            return .objectClose
 
         case 0x3a: // :
-            return RNJSONTokenKeyValueSeparator()
+            return .keyValueSeparator
 
         case 0x2c: // ,
-            return RNJSONTokenListSeparator()
+            return .listSeparator
 
         case 0x74: // t(rue)
-            return try extract(RNJSONTokenLiteralTrue(), from: data)
+            return try extract(.literalTrue, from: data)
 
         case 0x66: // f(alse)
-            return try extract(RNJSONTokenLiteralFalse(), from: data)
+            return try extract(.literalFalse, from: data)
 
         case 0x6E: // n(ull)
-            return try extract(RNJSONTokenLiteralNull(), from: data)
+            return try extract(.literalNull, from: data)
 
         case 0x22: // "
             return extractString(from: data)
@@ -110,8 +126,8 @@ public struct RNJSONTokenizer {
     }
 
     // data must begin with a prefix of needle, or this throws. data may be incomplete, so a partial prefix returns nil.
-    private func extract<Input: DataProtocol>(_ token: RNJSONLiteralToken, from data: Input) throws -> RNJSONToken? {
-        let needle = token.value
+    private func extract<Input: DataProtocol>(_ token: Token, from data: Input) throws -> Token? {
+        let needle = Data(token.rawValue.utf8)
 
         // Check that the starting data matches needle
         guard data.starts(with: needle.prefix(data.count)) else {
@@ -128,7 +144,7 @@ public struct RNJSONTokenizer {
 
     // Extracts a complete string (including quotation marks). If the string is incomplete, return nil.
     // Does not validate string. Any characters between unescaped double-quotes are returned.
-    private func extractString<Input: DataProtocol>(from data: Input) -> RNJSONToken? {
+    private func extractString<Input: DataProtocol>(from data: Input) -> Token? {
         var index = data.index(after: data.startIndex) // Drop leading "
 
         LOOP: while index < data.endIndex {
