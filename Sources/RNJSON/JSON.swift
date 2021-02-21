@@ -3,7 +3,7 @@ import Foundation
 @dynamicMemberLookup
 public enum RNJSON: Hashable {
     case string(String)
-    case number(NSNumber)
+    case number(String)
     case bool(Bool)
     case object([String: RNJSON])
     case array([RNJSON])
@@ -61,15 +61,18 @@ public extension RNJSON {
     }
 
     func numberValue() throws -> NSNumber {
-        guard case .number(let value) = self else { throw Error.typeMismatch }
-        return value
+        guard case .number(let value) = self,
+              let number = Decimal(string: value)
+              else { throw Error.typeMismatch }
+
+        return number as NSNumber
     }
 
     func doubleValue() throws -> Double { try numberValue().doubleValue }
     func intValue() throws -> Int { try numberValue().intValue }
     func decimalValue() throws -> Decimal { try numberValue().decimalValue }
 
-    init(_ value: NSNumber) { self = .number(value) }
+    init(_ value: NSNumber) { self = .number(value.stringValue) }
 
     init(_ value: Int8)   { self.init(value as NSNumber) }
     init(_ value: Double) { self.init(value as NSNumber) }
@@ -193,7 +196,7 @@ extension RNJSON: Decodable {
     public init(from decoder: Decoder) throws {
         if let string = try? decoder.singleValueContainer().decode(String.self) { self = .string(string) }
 
-        else if let number = try? decoder.singleValueContainer().decode(Decimal.self) { self = .number(number as NSNumber) }
+        else if let number = try? decoder.singleValueContainer().decode(Decimal.self) { self = .number("\(number)") }
 
         else if let bool = try? decoder.singleValueContainer().decode(Bool.self) { self = .bool(bool) }
 
@@ -230,7 +233,7 @@ extension RNJSON: Encodable {
 
         case .number(let number):
             var container = encoder.singleValueContainer()
-            try container.encode(number.decimalValue)
+            try container.encode(Decimal(string: number))
 
         case .bool(let bool):
             var container = encoder.singleValueContainer()

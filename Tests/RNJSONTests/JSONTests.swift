@@ -45,7 +45,7 @@ final class RNJSONTests: XCTestCase {
     }
 
     func testIntEncode() throws {
-        let value = RNJSON.number(1)
+        let value = RNJSON.number("1")
         let result = try JSONEncoder().stringEncode(value)
         let expected = "1"
 
