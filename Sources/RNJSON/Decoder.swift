@@ -33,12 +33,20 @@ class _RNJSONDecoder: Decoder {
     }
 
     func unkeyedContainer() throws -> UnkeyedDecodingContainer {
-        RNUnkeyedDecodingContainer(decoder: self, codingPath: codingPath, count: nil, isAtEnd: false, currentIndex: 0)
+        try RNUnkeyedDecodingContainer(decoder: self)
     }
 
     func singleValueContainer() throws -> SingleValueDecodingContainer { self }
-}
 
+    func consume(_ string: String) -> Bool {
+        let prefix = string.utf8
+        guard data.starts(with: prefix) else {
+            return false
+        }
+        data.removeFirst(prefix.count)
+        return true
+    }
+}
 
 struct RNKeyedDecodingContainer<Key: CodingKey>: KeyedDecodingContainerProtocol {
     var decoder: _RNJSONDecoder
@@ -51,62 +59,6 @@ struct RNKeyedDecodingContainer<Key: CodingKey>: KeyedDecodingContainerProtocol 
     }
 
     func decodeNil(forKey key: Key) throws -> Bool {
-        implement()
-    }
-
-    func decode(_ type: Bool.Type, forKey key: Key) throws -> Bool {
-        implement()
-    }
-
-    func decode(_ type: String.Type, forKey key: Key) throws -> String {
-        implement()
-    }
-
-    func decode(_ type: Double.Type, forKey key: Key) throws -> Double {
-        implement()
-    }
-
-    func decode(_ type: Float.Type, forKey key: Key) throws -> Float {
-        implement()
-    }
-
-    func decode(_ type: Int.Type, forKey key: Key) throws -> Int {
-        implement()
-    }
-
-    func decode(_ type: Int8.Type, forKey key: Key) throws -> Int8 {
-        implement()
-    }
-
-    func decode(_ type: Int16.Type, forKey key: Key) throws -> Int16 {
-        implement()
-    }
-
-    func decode(_ type: Int32.Type, forKey key: Key) throws -> Int32 {
-        implement()
-    }
-
-    func decode(_ type: Int64.Type, forKey key: Key) throws -> Int64 {
-        implement()
-    }
-
-    func decode(_ type: UInt.Type, forKey key: Key) throws -> UInt {
-        implement()
-    }
-
-    func decode(_ type: UInt8.Type, forKey key: Key) throws -> UInt8 {
-        implement()
-    }
-
-    func decode(_ type: UInt16.Type, forKey key: Key) throws -> UInt16 {
-        implement()
-    }
-
-    func decode(_ type: UInt32.Type, forKey key: Key) throws -> UInt32 {
-        implement()
-    }
-
-    func decode(_ type: UInt64.Type, forKey key: Key) throws -> UInt64 {
         implement()
     }
 
@@ -132,78 +84,34 @@ struct RNKeyedDecodingContainer<Key: CodingKey>: KeyedDecodingContainerProtocol 
 }
 
 struct RNUnkeyedDecodingContainer: UnkeyedDecodingContainer {
-    var decoder: _RNJSONDecoder
-
-    var codingPath: [CodingKey]
-
-    var count: Int?
-
-    var isAtEnd: Bool
-
-    var currentIndex: Int
-
     mutating func decodeNil() throws -> Bool {
         implement()
     }
 
-    mutating func decode(_ type: Bool.Type) throws -> Bool {
-        implement()
-    }
+    var decoder: _RNJSONDecoder
+    var codingPath: [CodingKey] = []
+    var count: Int?
+    var isAtEnd: Bool = false
+    var currentIndex: Int = 0
 
-    mutating func decode(_ type: String.Type) throws -> String {
-        implement()
-    }
-
-    mutating func decode(_ type: Double.Type) throws -> Double {
-        implement()
-    }
-
-    mutating func decode(_ type: Float.Type) throws -> Float {
-        implement()
-    }
-
-    mutating func decode(_ type: Int.Type) throws -> Int {
-        implement()
-    }
-
-    mutating func decode(_ type: Int8.Type) throws -> Int8 {
-        implement()
-    }
-
-    mutating func decode(_ type: Int16.Type) throws -> Int16 {
-        implement()
-    }
-
-    mutating func decode(_ type: Int32.Type) throws -> Int32 {
-        implement()
-    }
-
-    mutating func decode(_ type: Int64.Type) throws -> Int64 {
-        implement()
-    }
-
-    mutating func decode(_ type: UInt.Type) throws -> UInt {
-        implement()
-    }
-
-    mutating func decode(_ type: UInt8.Type) throws -> UInt8 {
-        implement()
-    }
-
-    mutating func decode(_ type: UInt16.Type) throws -> UInt16 {
-        implement()
-    }
-
-    mutating func decode(_ type: UInt32.Type) throws -> UInt32 {
-        implement()
-    }
-
-    mutating func decode(_ type: UInt64.Type) throws -> UInt64 {
-        implement()
+    init(decoder: _RNJSONDecoder) throws {
+        self.decoder = decoder
+        if !decoder.consume("[") {
+            throw DecodingError.typeMismatch([Any].self, .init(codingPath: codingPath,
+                                                               debugDescription: "IMPLEMENT"))
+        }
     }
 
     mutating func decode<T>(_ type: T.Type) throws -> T where T : Decodable {
-        try decoder.decode(T.self)
+        let value = try decoder.decode(T.self)
+        if decoder.consume("]") {
+            isAtEnd = true
+        } else if !decoder.consume(",") {
+            throw DecodingError.dataCorruptedError(in: self, debugDescription: "Missing , or ]")
+        }
+        currentIndex += 1
+        return value
+
     }
 
     mutating func nestedContainer<NestedKey>(keyedBy type: NestedKey.Type) throws -> KeyedDecodingContainer<NestedKey> where NestedKey : CodingKey {
@@ -230,7 +138,6 @@ extension _RNJSONDecoder: SingleValueDecodingContainer {
         throw DecodingError.typeMismatch(String.self,
                                          .init(codingPath: codingPath,
                                                debugDescription: "Expected to decode Bool."))
-
     }
 
     // FIXME: Fully verify legal string
@@ -290,6 +197,7 @@ extension _RNJSONDecoder: SingleValueDecodingContainer {
                                                                              code: NSPropertyListReadCorruptError,
                                                                              userInfo: [NSDebugDescriptionErrorKey: "Unable to convert data to number around character \(data.startIndex)."])))
         }
+        data.removeFirst(numbers.count)
         return value
     }
 

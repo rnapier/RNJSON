@@ -120,15 +120,12 @@ final class RNJSONDecoderTests: XCTestCase {
 
     func testArray() throws {
         let json = Data("""
-            [1, 1]
+            [1,1]
             """.utf8)
 
         let result = try RNJSONDecoder().decode([Int].self, from: json)
         XCTAssertEqual(result, [1, 1])
-
-
     }
-
 
 
 
