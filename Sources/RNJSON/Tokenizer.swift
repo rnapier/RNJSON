@@ -1,185 +1,182 @@
-////
-////  Tokenizer.swift
-////  
-////
-////  Created by Rob Napier on 1/31/21.
-////
 //
-//import Foundation
+//  Tokenizer.swift
 //
-////
-////public protocol RNJSONToken {
-////    var length: Int { get }
-////}
-////
-////// Default length
-////public extension RNJSONToken {
-////    var length: Int { 1 }
-////}
-////
-////public protocol RNJSONLiteralToken: RNJSONToken {
-////    var value: Data { get }
-////}
-////
-////public extension RNJSONLiteralToken {
-////    var length: Int { value.count }
-////}
-////
-////public struct RNJSONTokenArrayOpen: RNJSONToken {}
-////public struct RNJSONTokenArrayClose: RNJSONToken {}
-////
-////public struct RNJSONTokenObjectOpen: RNJSONToken {}
-////public struct RNJSONTokenObjectClose: RNJSONToken {}
-////
-////public struct RNJSONTokenKeyValueSeparator: RNJSONToken {}
-////public struct RNJSONTokenListSeparator: RNJSONToken {}
-////
-////public struct RNJSONTokenLiteralTrue: RNJSONLiteralToken { public var value: Data { Data("true".utf8) } }
-////public struct RNJSONTokenLiteralFalse: RNJSONLiteralToken { public var value: Data { Data("false".utf8) } }
-////public struct RNJSONTokenLiteralNull: RNJSONLiteralToken { public var value: Data { Data("null".utf8) } }
-////
-////public struct RNJSONTokenString: RNJSONToken { public var length: Int }
-////public struct RNJSONTokenNumber: RNJSONToken { public var length: Int }
-////public struct RNJSONTokenWhitespace: RNJSONToken { public var length: Int }
 //
-//// Tokenizer splits up Data into semantic components.
-//// The resulting Tokens can be used to reconstruct the original JSON, including whitespace.
-//// Tokenizer does the bare minimum required to tokenize. It does not validate that the JSON if valid. For
-//// example, it does not parse strings; it just looks for a double-quote followed by a non-escaped
-//// double-quote. This allows parsers to deal with many kinds of technically invalid JSON.
+//  Created by Rob Napier on 1/31/21.
 //
-//public struct RNJSONTokenizer {
-//    public enum Token {
-//        case arrayOpen
-//        case arrayClose
-//        case objectOpen
-//        case objectClose
-//        case keyValueSeparator
-//        case listSeparator
-//        case literalTrue
-//        case literalFalse
-//        case literalNull
-//        case string(Data)
-//        case number(Data)
-//        case whitespace(Data)
-//    }
-//
-//    public enum Error: Swift.Error {
-//        case unexpectedToken
-//    }
-//
-//    private let whitespaceBytes: [UInt8] = [0x09, 0x0a, 0x0d, 0x20]
-//    private let numberBytes: [UInt8] = [0x2b,   // +
-//                                        0x2d,   // -
-//                                        0x2e,   // .
-//                                        0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39, // 0-9
-//                                        0x45,   // E
-//                                        0x65    // e
-//    ]
-//
-//    // Extracts first token, if complete. Returns nil if incomplete token is found. Throws for invalid token.
-//    public func parseFirstToken<Input: DataProtocol>(from data: Input) throws -> Token? {
-//        guard let byte = data.first else {
-//            return nil
-//        }
-//
-//        switch byte {
-//        case 0x5b: // [
-//            return .arrayOpen
-//
-//        case 0x7b: // {
-//            return .objectOpen
-//
-//        case 0x5d: // ]
-//            return .arrayClose
-//
-//        case 0x7d: // }
-//            return .objectClose
-//
-//        case 0x3a: // :
-//            return .keyValueSeparator
-//
-//        case 0x2c: // ,
-//            return .listSeparator
-//
-//        case 0x74: // t(rue)
-//            return try extract(.literalTrue, from: data)
-//
-//        case 0x66: // f(alse)
-//            return try extract(.literalFalse, from: data)
-//
-//        case 0x6E: // n(ull)
-//            return try extract(.literalNull, from: data)
-//
-//        case 0x22: // "
-//            return extractString(from: data)
-//
-//        case 0x2d, 0x30...0x49: // -, 0-9
-//            return extractNumber(from: data)
-//
-//        case 0x09, 0x0a, 0x0d, 0x20: // consume whitespace
-//            return extractWhitespace(from: data)
-//
-//        default:
-//            throw Error.unexpectedToken
-//        }
-//    }
-//
-//    // data must begin with a prefix of needle, or this throws. data may be incomplete, so a partial prefix returns nil.
-//    private func extract<Input: DataProtocol>(_ token: Token, from data: Input) throws -> Token? {
-//        let needle = Data(token.rawValue.utf8)
-//
-//        // Check that the starting data matches needle
-//        guard data.starts(with: needle.prefix(data.count)) else {
-//            throw Error.unexpectedToken
-//        }
-//
-//        // Check that the complete needle is found
-//        guard data.count >= needle.count else {
-//            return nil
-//        }
-//
-//        return token
-//    }
-//
-//    // Extracts a complete string (including quotation marks). If the string is incomplete, return nil.
-//    // Does not validate string. Any characters between unescaped double-quotes are returned.
-//    private func extractString<Input: DataProtocol>(from data: Input) -> Token? {
-//        var index = data.index(after: data.startIndex) // Drop leading "
-//
-//        LOOP: while index < data.endIndex {
-//            switch data[index] {
-//            case 0x5c: // \
-//                // Don't worry about what the next character is. At this point, we're not validating
-//                // the string, just looking for an unescaped double-quote.
-//                if !data.formIndex(&index, offsetBy: 2, limitedBy: data.endIndex) {
-//                    // Couldn't advance by 2, so data ends in a \
-//                    break LOOP
-//                }
-//
-//            case 0x22: // "
-//                let totalStringLength = data.distance(from: data.startIndex, to: index) + 1
-//                return RNJSONTokenString(length: totalStringLength)
-//
-//            default:
-//                index = data.index(after: index)
-//            }
-//        }
-//
-//        // Couldn't find end of string
-//        return nil
-//    }
-//
-//    // Extracts a complete number. If the number may be incomplete (is not followed by a non-number), return nil.
-//    // Does not validate the number. Any sequence of "number-like" characters is accepted
-//    private func extractNumber<Input: DataProtocol>(from data: Input) -> RNJSONToken? {
-//        let numbers = data.prefix { numberBytes.contains($0) }
-//        if numbers.count == data.count { return nil }
-//        return RNJSONTokenNumber(length: numbers.count)
-//    }
-//
-//    private func extractWhitespace<Input: DataProtocol>(from data: Input) -> RNJSONToken {
-//        let whitespace = data.prefix { whitespaceBytes.contains($0) }
-//        return RNJSONTokenWhitespace(length: whitespace.count)
-//    }
-//}
+
+import Foundation
+
+public protocol JSONToken {
+    var data: Data { get }
+    var possiblyTruncated: Bool { get }
+}
+
+public extension JSONToken {
+    var length: Int { data.count }
+    var possiblyTruncated: Bool { false }
+}
+
+public struct JSONTokenArrayOpen: JSONToken { public let data = Data("[".utf8) }
+public struct JSONTokenArrayClose: JSONToken { public let data = Data("]".utf8) }
+
+public struct JSONTokenObjectOpen: JSONToken { public let data = Data("{".utf8) }
+public struct JSONTokenObjectClose: JSONToken { public let data = Data("}".utf8) }
+
+public struct JSONTokenKeyValueSeparator: JSONToken { public let data = Data(":".utf8)}
+public struct JSONTokenListSeparator: JSONToken { public let data = Data(",".utf8)}
+
+public struct JSONTokenLiteralTrue: JSONToken { public let data = Data("true".utf8) }
+public struct JSONTokenLiteralFalse: JSONToken { public let data = Data("false".utf8) }
+public struct JSONTokenLiteralNull: JSONToken { public let data = Data("null".utf8) }
+
+public struct JSONTokenString: JSONToken { public var data: Data }
+
+public struct JSONTokenNumber: JSONToken {
+    public var data: Data
+    public var possiblyTruncated: Bool
+}
+
+public struct JSONTokenWhitespace: JSONToken {
+    public var data: Data
+    public var possiblyTruncated: Bool
+}
+
+// Tokenizer splits up Data into semantic components.
+// The resulting Tokens can be used to reconstruct the original JSON, including whitespace.
+// Tokenizer does the bare minimum required to tokenize. It does not verify that the JSON if valid. For
+// example, it does not parse strings; it just looks for a double-quote followed by a non-escaped
+// double-quote. This allows parsers to deal with many kinds of technically invalid JSON.
+
+public struct JSONTokenizer {
+    public enum Error: Swift.Error {
+        case unexpectedToken
+        case dataTruncated
+    }
+
+    private let whitespaceBytes: [UInt8] = [0x09, 0x0a, 0x0d, 0x20]
+    private let numberBytes: [UInt8] = [0x2b,   // +
+                                        0x2d,   // -
+                                        0x2e,   // .
+                                        0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39, // 0-9
+                                        0x45,   // E
+                                        0x65    // e
+    ]
+
+    public func parseAll(data: Data) throws -> [JSONToken] {
+        var json = data
+        var tokens: [JSONToken] = []
+        while !json.isEmpty {
+            let result = try parseFirstToken(from: json)
+            tokens.append(result)
+            json.removeFirst(result.length)
+        }
+        return tokens
+    }
+
+    // Extracts first token. Returns nil if incomplete token is found. Throws for invalid token. Note that
+    // it is possible for a number to be incomplete if data is not complete. It is up to the caller to check
+    // for that situation.
+    public func parseFirstToken(from data: Data) throws -> JSONToken {
+        guard let byte = data.first else {
+            throw Error.dataTruncated
+        }
+
+        switch byte {
+        case 0x5b: // [
+            return JSONTokenArrayOpen()
+
+        case 0x7b: // {
+            return JSONTokenObjectOpen()
+
+        case 0x5d: // ]
+            return JSONTokenArrayClose()
+
+        case 0x7d: // }
+            return JSONTokenObjectClose()
+
+        case 0x3a: // :
+            return JSONTokenKeyValueSeparator()
+
+        case 0x2c: // ,
+            return JSONTokenListSeparator()
+
+        case 0x74: // t(rue)
+            return try extract(JSONTokenLiteralTrue(), from: data)
+
+        case 0x66: // f(alse)
+            return try extract(JSONTokenLiteralFalse(), from: data)
+
+        case 0x6E: // n(ull)
+            return try extract(JSONTokenLiteralNull(), from: data)
+
+        case 0x22: // "
+            return try extractString(from: data)
+
+        case 0x2d, 0x30...0x49: // -, 0-9
+            return extractNumber(from: data)
+
+        case 0x09, 0x0a, 0x0d, 0x20: // consume whitespace
+            return extractWhitespace(from: data)
+
+        default:
+            throw Error.unexpectedToken
+        }
+    }
+
+    // data must begin with a prefix of needle, or this throws.
+    private func extract(_ token: JSONToken, from data: Data) throws -> JSONToken {
+        let needle = token.data
+
+        // Check that the starting data matches needle
+        guard data.starts(with: needle.prefix(data.count)) else {
+            throw Error.unexpectedToken
+        }
+
+        // Check that the complete needle is found
+        guard data.count >= needle.count else {
+            throw Error.dataTruncated
+        }
+
+        return token
+    }
+
+    // Extracts a complete string (including quotation marks). If the string is incomplete, throw .dataTruncated.
+    // Does not validate string. Any characters between unescaped double-quotes are returned.
+    private func extractString(from data: Data) throws -> JSONToken {
+        var index = data.index(after: data.startIndex) // Drop leading "
+
+        LOOP: while index < data.endIndex {
+            switch data[index] {
+            case 0x5c: // \
+                // Don't worry about what the next character is. At this point, we're not validating
+                // the string, just looking for an unescaped double-quote.
+                if !data.formIndex(&index, offsetBy: 2, limitedBy: data.endIndex) {
+                    // Couldn't advance by 2, so data ends in a \
+                    break LOOP
+                }
+
+            case 0x22: // "
+                return JSONTokenString(data: data.prefix(through: index))
+
+            default:
+                index = data.index(after: index)
+            }
+        }
+
+        // Couldn't find end of string
+        throw Error.dataTruncated
+    }
+
+    // Extracts a number. Does not validate the number. Any sequence of "number-like" characters is accepted.
+    // Note that it is possible that this number is truncated; the caller must check for that situation.
+    private func extractNumber(from data: Data) -> JSONToken {
+        let number = data.prefix { numberBytes.contains($0) }
+        return JSONTokenNumber(data: number, possiblyTruncated: number.count == data.count)
+    }
+
+    private func extractWhitespace(from data: Data) -> JSONToken {
+        let whitespace = data.prefix { whitespaceBytes.contains($0) }
+        return JSONTokenWhitespace(data: whitespace, possiblyTruncated: whitespace.count == data.count)
+    }
+}
