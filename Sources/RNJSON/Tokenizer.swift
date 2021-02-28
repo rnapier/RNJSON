@@ -49,11 +49,6 @@ public struct JSONTokenWhitespace: JSONToken {
 // double-quote. This allows parsers to deal with many kinds of technically invalid JSON.
 
 public struct JSONTokenizer {
-    public enum Error: Swift.Error {
-        case unexpectedToken
-        case dataTruncated
-    }
-
     private let whitespaceBytes: [UInt8] = [0x09, 0x0a, 0x0d, 0x20]
     private let numberBytes: [UInt8] = [0x2b,   // +
                                         0x2d,   // -
@@ -63,11 +58,11 @@ public struct JSONTokenizer {
                                         0x65    // e
     ]
 
-    public func parseAll(data: Data) throws -> [JSONToken] {
+    public func allTokens(from data: Data) throws -> [JSONToken] {
         var json = data
         var tokens: [JSONToken] = []
         while !json.isEmpty {
-            let result = try parseFirstToken(from: json)
+            let result = try firstToken(from: json)
             tokens.append(result)
             json.removeFirst(result.length)
         }
@@ -77,9 +72,9 @@ public struct JSONTokenizer {
     // Extracts first token. Returns nil if incomplete token is found. Throws for invalid token. Note that
     // it is possible for a number to be incomplete if data is not complete. It is up to the caller to check
     // for that situation.
-    public func parseFirstToken(from data: Data) throws -> JSONToken {
+    public func firstToken(from data: Data) throws -> JSONToken {
         guard let byte = data.first else {
-            throw Error.dataTruncated
+            throw JSONError.dataTruncated
         }
 
         switch byte {
@@ -120,7 +115,7 @@ public struct JSONTokenizer {
             return extractWhitespace(from: data)
 
         default:
-            throw Error.unexpectedToken
+            throw JSONError.unexpectedToken
         }
     }
 
@@ -130,12 +125,12 @@ public struct JSONTokenizer {
 
         // Check that the starting data matches needle
         guard data.starts(with: needle.prefix(data.count)) else {
-            throw Error.unexpectedToken
+            throw JSONError.unexpectedToken
         }
 
         // Check that the complete needle is found
         guard data.count >= needle.count else {
-            throw Error.dataTruncated
+            throw JSONError.dataTruncated
         }
 
         return token
@@ -165,7 +160,7 @@ public struct JSONTokenizer {
         }
 
         // Couldn't find end of string
-        throw Error.dataTruncated
+        throw JSONError.dataTruncated
     }
 
     // Extracts a number. Does not validate the number. Any sequence of "number-like" characters is accepted.

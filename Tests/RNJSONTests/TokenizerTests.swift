@@ -10,7 +10,7 @@ final class TokenizerTests: XCTestCase {
 
         let tokenizer = JSONTokenizer()
 
-        let result = try tokenizer.parseFirstToken(from: json)
+        let result = try tokenizer.firstToken(from: json)
 
         XCTAssertTrue(result is JSONTokenString)
         XCTAssertEqual(result.length, json.count)
@@ -26,7 +26,7 @@ final class JSONOrgTokenizerTests: XCTestCase {
 
         let tokenizer = JSONTokenizer()
 
-        let tokens = try tokenizer.parseAll(data: json)
+        let tokens = try tokenizer.allTokens(from: json)
 
         XCTAssertEqual(tokens.count, 301)
     }
@@ -40,7 +40,7 @@ final class JSONOrgTokenizerTests: XCTestCase {
         var tokens: [JSONToken] = []
         var index = json.startIndex
         while index < json.endIndex {
-            let result = try tokenizer.parseFirstToken(from: json[index...])
+            let result = try tokenizer.firstToken(from: json[index...])
             tokens.append(result)
             index = index.advanced(by: result.length)
         }
@@ -59,7 +59,7 @@ final class JSONOrgTokenizerTests: XCTestCase {
         var tokens: [JSONToken] = []
         var index = json.startIndex
         while index < json.endIndex {
-            let result = try tokenizer.parseFirstToken(from: json[index...])
+            let result = try tokenizer.firstToken(from: json[index...])
             tokens.append(result)
             index = index.advanced(by: result.length)
         }

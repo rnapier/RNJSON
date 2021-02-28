@@ -2,7 +2,10 @@ import Foundation
 
 // MARK: - Errors
 enum JSONError: Swift.Error {
+    case unexpectedToken
+    case dataTruncated
     case typeMismatch
+    case dataCorrupted
 }
 
 public protocol JSONValue {
@@ -30,11 +33,14 @@ public extension JSONValue {
 
 public struct JSONString: JSONValue {
     public var string: String
+    public init(_ string: String) { self.string = string }
+    init(data: Data) throws { self.string = try String(data: data, encoding: .utf8) ?? { throw JSONError.dataCorrupted }() }    // FIXME: Validate
     public func stringValue() throws -> String { string }
 }
 
 public struct JSONNumber: JSONValue {
     public var digitString: String
+    init(data: Data) throws { self.digitString = try String(data: data, encoding: .utf8) ?? { throw JSONError.dataCorrupted }() } // FIXME: Validate
     public func doubleValue() throws -> Double { try convert(to: Double.self) }
     public func floatValue() throws -> Float { try convert(to: Float.self) }
     public func decimalValue() throws -> Decimal { try Decimal(string: digitString) ?? { throw JSONError.typeMismatch }()}
@@ -46,45 +52,34 @@ public struct JSONNumber: JSONValue {
 
 public struct JSONBool: JSONValue {
     public var value: Bool
+    public init(_ value: Bool) { self.value = value }
     public func boolValue() throws -> Bool { value }
 }
 
-public struct JSONObject: JSONValue {
-    public var keyValues: KeyValuePairs<String, JSONValue>
+typealias JSONObject = KeyValuePairs<String, JSONValue>
+extension KeyValuePairs: JSONValue where Key == String, Value == JSONValue {
     public func objectValue() throws -> [String: JSONValue] {
-        Dictionary(keyValues.lazy.map { ($0.key, $0.value) },
+        Dictionary(self.lazy.map { ($0.key, $0.value) },
                    uniquingKeysWith: { first, _ in first })
     }
 }
 
-public struct JSONArray: JSONValue {
-    public var values: [JSONValue]
-    public func arrayValue() throws -> [JSONValue] { values }
+//public struct JSONObject: JSONValue {
+//    public var keyValues: KeyValuePairs<String, JSONValue>
+//    public func objectValue() throws -> [String: JSONValue] {
+//        Dictionary(keyValues.lazy.map { ($0.key, $0.value) },
+//                   uniquingKeysWith: { first, _ in first })
+//    }
+//}
+
+typealias JSONArray = [JSONValue]
+extension Array: JSONValue where Element == JSONValue {
+    public func arrayValue() throws -> [JSONValue] { self }
 }
 
 public struct JSONNull: JSONValue {
     public func isNull() -> Bool { true }
 }
-
-//public class JSONParser {
-//    public func parse(data: Data) throws -> JSONValue {
-//        var data = data
-//
-//        while let byte = data.popFirst() {
-//            switch byte {
-//            case 0x5b: // [
-//            case 0x7b: // {
-//            case 0x74: // t(rue)
-//            case 0x66: // f(alse)
-//            case 0x22: // "
-//            case 0x2d, 0x30...0x49: // -, 0-9
-//            case 0x09, 0x0a, 0x0d, 0x20: // whitespace
-//                continue
-//            }
-//
-//        }
-//    }
-//}
 
 
 //@dynamicMemberLookup
