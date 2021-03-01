@@ -13,6 +13,7 @@ public protocol JSONValue {
     func doubleValue() throws -> Double
     func floatValue() throws -> Float
     func decimalValue() throws -> Decimal
+    func intValue() throws -> Int
     func boolValue() throws -> Bool
     func objectValue() throws -> [String: JSONValue]
     func arrayValue() throws -> [JSONValue]
@@ -25,6 +26,7 @@ public extension JSONValue {
     func doubleValue() throws -> Double { throw JSONError.typeMismatch }
     func floatValue() throws -> Float { throw JSONError.typeMismatch }
     func decimalValue() throws -> Decimal { throw JSONError.typeMismatch }
+    func intValue() throws -> Int { throw JSONError.typeMismatch }
     func boolValue() throws -> Bool { throw JSONError.typeMismatch }
     func objectValue() throws -> [String: JSONValue] { throw JSONError.typeMismatch }
     func arrayValue() throws -> [JSONValue]  { throw JSONError.typeMismatch }
@@ -34,16 +36,19 @@ public extension JSONValue {
 public struct JSONString: JSONValue {
     public var string: String
     public init(_ string: String) { self.string = string }
-    init(data: Data) throws { self.string = try String(data: data, encoding: .utf8) ?? { throw JSONError.dataCorrupted }() }    // FIXME: Validate
+    init(data: Data) throws { self.string = try String(data: data.dropFirst().dropLast(), encoding: .utf8) ?? { throw JSONError.dataCorrupted }() }    // FIXME: Validate
     public func stringValue() throws -> String { string }
 }
 
 public struct JSONNumber: JSONValue {
     public var digitString: String
+    public init<Number: FixedWidthInteger>(_ number: Number) { self.digitString = "\(number)" }
+
     init(data: Data) throws { self.digitString = try String(data: data, encoding: .utf8) ?? { throw JSONError.dataCorrupted }() } // FIXME: Validate
     public func doubleValue() throws -> Double { try convert(to: Double.self) }
     public func floatValue() throws -> Float { try convert(to: Float.self) }
     public func decimalValue() throws -> Decimal { try Decimal(string: digitString) ?? { throw JSONError.typeMismatch }()}
+    public func intValue() throws -> Int { try convert(to: Int.self) }
 
     private func convert<N: LosslessStringConvertible>(to: N.Type) throws -> N {
         try N.init(digitString) ?? { throw JSONError.typeMismatch }()
@@ -56,25 +61,25 @@ public struct JSONBool: JSONValue {
     public func boolValue() throws -> Bool { value }
 }
 
-typealias JSONObject = KeyValuePairs<String, JSONValue>
-extension KeyValuePairs: JSONValue where Key == String, Value == JSONValue {
+public struct JSONObject: JSONValue {
+    public var keyValues: [(key: String, value: JSONValue)]
+    public init() { self.keyValues = [] }
     public func objectValue() throws -> [String: JSONValue] {
-        Dictionary(self.lazy.map { ($0.key, $0.value) },
+        Dictionary(keyValues.lazy.map { ($0.key, $0.value) },
                    uniquingKeysWith: { first, _ in first })
+    }
+    public mutating func add(value: JSONValue, for key: String) {
+        keyValues.append((key: key, value: value))
     }
 }
 
-//public struct JSONObject: JSONValue {
-//    public var keyValues: KeyValuePairs<String, JSONValue>
-//    public func objectValue() throws -> [String: JSONValue] {
-//        Dictionary(keyValues.lazy.map { ($0.key, $0.value) },
-//                   uniquingKeysWith: { first, _ in first })
-//    }
-//}
-
-typealias JSONArray = [JSONValue]
-extension Array: JSONValue where Element == JSONValue {
-    public func arrayValue() throws -> [JSONValue] { self }
+public struct JSONArray: JSONValue {
+    public var elements: [JSONValue]
+    public init(_ elements: [JSONValue] = []) { self.elements = elements }
+    public func arrayValue() throws -> [JSONValue] { elements }
+    public mutating func append(_ element: JSONValue) {
+        elements.append(element)
+    }
 }
 
 public struct JSONNull: JSONValue {

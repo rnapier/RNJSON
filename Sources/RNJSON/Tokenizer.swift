@@ -10,11 +10,13 @@ import Foundation
 public protocol JSONToken {
     var data: Data { get }
     var possiblyTruncated: Bool { get }
+    var isIgnored: Bool { get }
 }
 
 public extension JSONToken {
     var length: Int { data.count }
     var possiblyTruncated: Bool { false }
+    var isIgnored: Bool { false }
 }
 
 public struct JSONTokenArrayOpen: JSONToken { public let data = Data("[".utf8) }
@@ -30,7 +32,10 @@ public struct JSONTokenLiteralTrue: JSONToken { public let data = Data("true".ut
 public struct JSONTokenLiteralFalse: JSONToken { public let data = Data("false".utf8) }
 public struct JSONTokenLiteralNull: JSONToken { public let data = Data("null".utf8) }
 
-public struct JSONTokenString: JSONToken { public var data: Data }
+public struct JSONTokenString: JSONToken {
+    public var data: Data
+    public var utf8String: String? { String(data: data, encoding: .utf8) }
+}
 
 public struct JSONTokenNumber: JSONToken {
     public var data: Data
@@ -40,6 +45,7 @@ public struct JSONTokenNumber: JSONToken {
 public struct JSONTokenWhitespace: JSONToken {
     public var data: Data
     public var possiblyTruncated: Bool
+    public var isIgnored: Bool { true }
 }
 
 // Tokenizer splits up Data into semantic components.

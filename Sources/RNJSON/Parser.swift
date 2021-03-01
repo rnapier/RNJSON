@@ -10,16 +10,19 @@ import Foundation
 public class JSONParser {
 
     public func parse(data: Data) throws -> JSONValue {
-        return try parseValue(for: try JSONTokenizer().allTokens(from: data))
+        var tokens = try JSONTokenizer().allTokens(from: data)[...]
+        let value = try parseValue(for: &tokens)
+        guard tokens.isEmpty else { throw JSONError.unexpectedToken }
+        return value
     }
 
-    func parseValue<Tokens>(for tokens: Tokens) throws -> JSONValue where Tokens: Collection, Tokens.Element == JSONToken {
-
-        let (token, rest) = try tokens.nextToken()
+    func parseValue<Tokens>(for tokens: inout Tokens) throws -> JSONValue where Tokens: Collection, Tokens.Element == JSONToken, Tokens.SubSequence == Tokens {
+        tokens.removeWhitespace()
+        guard let token = tokens.popFirst() else { throw JSONError.dataTruncated }
 
         switch token {
-        case is JSONTokenArrayOpen:    return try parseArray(for: rest)
-        case is JSONTokenObjectOpen:   return try parseArray(for: rest)
+        case is JSONTokenArrayOpen:    return try parseArray(for: &tokens)
+        case is JSONTokenObjectOpen:   return try parseArray(for: &tokens)
         case is JSONTokenLiteralTrue:  return JSONBool(true)
         case is JSONTokenLiteralFalse: return JSONBool(false)
         case is JSONTokenLiteralNull:  return JSONNull()
@@ -29,30 +32,59 @@ public class JSONParser {
         }
     }
 
-    func parseArray<Tokens>(for tokens: Tokens) throws -> JSONArray where Tokens: Collection, Tokens.Element == JSONToken {
-        var elements: [JSONValue] = []
+    func parseArray<Tokens>(for tokens: inout Tokens) throws -> JSONArray where Tokens: Collection, Tokens.Element == JSONToken, Tokens.SubSequence == Tokens {
+        var elements = JSONArray()
 
-        repeat {
-            let (token, _) = try tokens.nextToken()
-            if token is JSONTokenArrayClose { return JSONArray(elements) }
-            else { elements.append(try parseValue(for: tokens)) }
-        } while true
+        var token = try tokens.requireToken()
+        if token is JSONTokenArrayClose { return elements }
+
+        while true {
+            elements.append(try parseValue(for: &tokens))
+            token = try tokens.requireToken()
+            switch token {
+            case is JSONTokenArrayClose: break
+            case is JSONTokenListSeparator: token = try tokens.requireToken()
+            default: throw JSONError.unexpectedToken
+            }
+        }
+        return elements
     }
 
-    func parseObject<Tokens>(for tokens: Tokens) throws -> JSONObject where Tokens: Collection, Tokens.Element == JSONToken {
-        fatalError()
-    }
+    func parseObject<Tokens>(for tokens: inout Tokens) throws -> JSONObject where Tokens: Collection, Tokens.Element == JSONToken, Tokens.SubSequence == Tokens {
+        var object = JSONObject()
 
+        var token = try tokens.requireToken()
+        if token is JSONTokenObjectClose { return object }
+
+        while true {
+            guard let stringToken = token as? JSONTokenString,
+                  let key = stringToken.utf8String
+            else { throw JSONError.unexpectedToken }
+
+            guard try tokens.requireToken() is JSONTokenKeyValueSeparator else { throw JSONError.unexpectedToken }
+
+            object.add(value: try parseValue(for: &tokens), for: key)
+
+            token = try tokens.requireToken()
+
+            switch token {
+            case is JSONTokenObjectClose: break
+            case is JSONTokenListSeparator: token = try tokens.requireToken()
+            default: throw JSONError.unexpectedToken
+            }
+        }
+        return object
+    }
 }
 
-private extension Collection where Element == JSONToken {
-    func dropWhitespace() -> SubSequence {
-        drop(while: { $0 is JSONTokenWhitespace })
+
+private extension Collection where Element == JSONToken, SubSequence == Self {
+    mutating func removeWhitespace() {
+        self = self.drop(while: \.isIgnored)
     }
 
-    func nextToken() throws -> (JSONToken, SubSequence) {
-        let tokens = self.dropWhitespace()
-        guard let token = tokens.first else { throw JSONError.dataTruncated }
-        return (token, tokens)
+    mutating func requireToken() throws -> JSONToken {
+        removeWhitespace()
+        return try popFirst() ?? { throw JSONError.dataTruncated }()
     }
 }
