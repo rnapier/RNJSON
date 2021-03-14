@@ -17,8 +17,9 @@ public class JSONParser {
     }
 
     func parseValue<Tokens>(for tokens: inout Tokens) throws -> JSONValue where Tokens: Collection, Tokens.Element == JSONToken, Tokens.SubSequence == Tokens {
-        tokens.removeWhitespace()
-        guard let token = tokens.popFirst() else { throw JSONError.dataTruncated }
+        let token = try tokens.requireToken()
+//        tokens.removeWhitespace()
+//        guard let token = tokens.popFirst() else { throw JSONError.dataTruncated }
 
         switch token {
         case is JSONTokenArrayOpen:    return try parseArray(for: &tokens)
@@ -35,19 +36,22 @@ public class JSONParser {
     func parseArray<Tokens>(for tokens: inout Tokens) throws -> JSONArray where Tokens: Collection, Tokens.Element == JSONToken, Tokens.SubSequence == Tokens {
         var elements = JSONArray()
 
-        var token = try tokens.requireToken()
-        if token is JSONTokenArrayClose { return elements }
-
-        while true {
+        // Check the first token. It may be an empty list
+        do {
             elements.append(try parseValue(for: &tokens))
-            token = try tokens.requireToken()
+        } catch let JSONError.unexpectedToken(at: _, expected: _, found: found) where found is JSONTokenArrayClose {
+            return elements
+        }
+
+        // Check the rest of the tokens
+        while true {
+            let token = try tokens.requireToken()
             switch token {
-            case is JSONTokenArrayClose: break
-            case is JSONTokenListSeparator: token = try tokens.requireToken()
+            case is JSONTokenArrayClose: return elements
+            case is JSONTokenListSeparator: elements.append(try parseValue(for: &tokens))
             default: throw JSONError.unexpectedToken(at: token.location, expected: [JSONTokenArrayClose.self, JSONTokenListSeparator.self], found: token)
             }
         }
-        return elements
     }
 
     func parseObject<Tokens>(for tokens: inout Tokens) throws -> JSONObject where Tokens: Collection, Tokens.Element == JSONToken, Tokens.SubSequence == Tokens {

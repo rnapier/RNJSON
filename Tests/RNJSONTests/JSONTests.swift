@@ -136,14 +136,16 @@ final class RNJSONTests: XCTestCase {
 //        XCTAssertEqual(result, expected)
 //    }
 //
-//    func testArrayDecode() throws {
-//        let json = "[1,2,3]"
-//        let result = try JSONDecoder().stringDecode(RNJSON.self, from:json)
-//        let expectedValue = [1,2,3] as [RNJSON]
-//
-//        XCTAssertEqual(result, RNJSON(expectedValue))
-//        XCTAssertEqual(try result.arrayValue(), expectedValue)
-//    }
+    func testArrayDecode() throws {
+        let json = "[1,2,3]"
+        let result = try JSONParser().parse(data: Data(json.utf8))
+
+        XCTAssert(result is JSONArray)
+        XCTAssertEqual(result.count, 3)
+        XCTAssertEqual(try result[0]?.intValue(), 1)
+        XCTAssertEqual(try result[1]?.intValue(), 2)
+        XCTAssertEqual(try result[2]?.intValue(), 3)
+    }
 //
 //    func testNullEncode() throws {
 //        let value = RNJSON(NSNull())

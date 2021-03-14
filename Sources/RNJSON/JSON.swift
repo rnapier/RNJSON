@@ -24,6 +24,7 @@ public protocol JSONValue {
     func getAll(_ key: String) throws -> [JSONValue]
     subscript(_ key: String) -> JSONValue? { get }
 
+    var count: Int { get }
     func get(_ index: Int) throws -> JSONValue
     subscript(_ index: Int) -> JSONValue? { get }
 
@@ -45,6 +46,7 @@ public extension JSONValue {
     func getAll(_ key: String) throws -> [JSONValue] { throw JSONError.typeMismatch }
     subscript(_ key: String) -> JSONValue? { nil }
 
+    var count: Int { 1 }
     func get(_ index: Int) throws -> JSONValue { throw JSONError.typeMismatch }
     subscript(_ index: Int) -> JSONValue? { nil }
 
@@ -91,6 +93,7 @@ public struct JSONObject: JSONValue {
         keyValues.append((key: key, value: value))
     }
 
+    public var count: Int { keyValues.count }
     public func get(_ key: String) throws -> JSONValue { try self[key] ?? { throw JSONError.missingValue }() }
     public func getAll(_ key: String) -> [JSONValue] { keyValues.filter({ $0.key == key }).map(\.value) }
     public subscript(_ key: String) -> JSONValue? { keyValues.first(where: { $0.key == key })?.value }
@@ -102,6 +105,9 @@ public struct JSONArray: JSONValue {
     public mutating func append(_ element: JSONValue) {
         elements.append(element)
     }
+    public var count: Int { elements.count }
+    public func get(_ index: Int) throws -> JSONValue { try self[index] ?? { throw JSONError.missingValue }() }
+    public subscript(_ index: Int) -> JSONValue? { elements.indices.contains(index) ? elements[index] : nil }
 }
 
 public struct JSONNull: JSONValue {
