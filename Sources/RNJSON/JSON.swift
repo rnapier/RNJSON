@@ -2,51 +2,74 @@ import Foundation
 
 // MARK: - Errors
 enum JSONError: Swift.Error {
-    case unexpectedToken
+    case unexpectedByte(at: Int, found: [UInt8])
+    case unexpectedToken(at: Int, expected: [JSONToken.Type], found: JSONToken)
     case dataTruncated
     case typeMismatch
     case dataCorrupted
+    case missingValue
 }
 
 public protocol JSONValue {
     func stringValue() throws -> String
+
     func doubleValue() throws -> Double
-    func floatValue() throws -> Float
+
     func decimalValue() throws -> Decimal
     func intValue() throws -> Int
+
     func boolValue() throws -> Bool
-    func objectValue() throws -> [String: JSONValue]
-    func arrayValue() throws -> [JSONValue]
+
+    func get(_ key: String) throws -> JSONValue
+    func getAll(_ key: String) throws -> [JSONValue]
+    subscript(_ key: String) -> JSONValue? { get }
+
+    func get(_ index: Int) throws -> JSONValue
+    subscript(_ index: Int) -> JSONValue? { get }
+
     func isNull() -> Bool
 }
 
 // Default implementations
 public extension JSONValue {
     func stringValue() throws -> String { throw JSONError.typeMismatch }
+
     func doubleValue() throws -> Double { throw JSONError.typeMismatch }
-    func floatValue() throws -> Float { throw JSONError.typeMismatch }
+
     func decimalValue() throws -> Decimal { throw JSONError.typeMismatch }
     func intValue() throws -> Int { throw JSONError.typeMismatch }
+
     func boolValue() throws -> Bool { throw JSONError.typeMismatch }
-    func objectValue() throws -> [String: JSONValue] { throw JSONError.typeMismatch }
-    func arrayValue() throws -> [JSONValue]  { throw JSONError.typeMismatch }
+
+    func get(_ key: String) throws -> JSONValue { throw JSONError.typeMismatch }
+    func getAll(_ key: String) throws -> [JSONValue] { throw JSONError.typeMismatch }
+    subscript(_ key: String) -> JSONValue? { nil }
+
+    func get(_ index: Int) throws -> JSONValue { throw JSONError.typeMismatch }
+    subscript(_ index: Int) -> JSONValue? { nil }
+
     func isNull() -> Bool { false }
 }
 
 public struct JSONString: JSONValue {
     public var string: String
     public init(_ string: String) { self.string = string }
-    init(data: Data) throws { self.string = try String(data: data.dropFirst().dropLast(), encoding: .utf8) ?? { throw JSONError.dataCorrupted }() }    // FIXME: Validate
     public func stringValue() throws -> String { string }
+
+    public init(_ token: JSONTokenString) throws {
+        // FIXME: Validate
+        guard let string = token.contents else { throw JSONError.dataCorrupted }
+        self.init(string)
+    }
 }
 
 public struct JSONNumber: JSONValue {
     public var digitString: String
     public init<Number: FixedWidthInteger>(_ number: Number) { self.digitString = "\(number)" }
 
-    init(data: Data) throws { self.digitString = try String(data: data, encoding: .utf8) ?? { throw JSONError.dataCorrupted }() } // FIXME: Validate
+    init(_ token: JSONTokenNumber) throws { self.digitString = try String(data: token.data, encoding: .utf8) ?? { throw JSONError.dataCorrupted }() } // FIXME: Validate
+
     public func doubleValue() throws -> Double { try convert(to: Double.self) }
-    public func floatValue() throws -> Float { try convert(to: Float.self) }
     public func decimalValue() throws -> Decimal { try Decimal(string: digitString) ?? { throw JSONError.typeMismatch }()}
     public func intValue() throws -> Int { try convert(to: Int.self) }
 
@@ -64,19 +87,18 @@ public struct JSONBool: JSONValue {
 public struct JSONObject: JSONValue {
     public var keyValues: [(key: String, value: JSONValue)]
     public init() { self.keyValues = [] }
-    public func objectValue() throws -> [String: JSONValue] {
-        Dictionary(keyValues.lazy.map { ($0.key, $0.value) },
-                   uniquingKeysWith: { first, _ in first })
-    }
     public mutating func add(value: JSONValue, for key: String) {
         keyValues.append((key: key, value: value))
     }
+
+    public func get(_ key: String) throws -> JSONValue { try self[key] ?? { throw JSONError.missingValue }() }
+    public func getAll(_ key: String) -> [JSONValue] { keyValues.filter({ $0.key == key }).map(\.value) }
+    public subscript(_ key: String) -> JSONValue? { keyValues.first(where: { $0.key == key })?.value }
 }
 
 public struct JSONArray: JSONValue {
     public var elements: [JSONValue]
     public init(_ elements: [JSONValue] = []) { self.elements = elements }
-    public func arrayValue() throws -> [JSONValue] { elements }
     public mutating func append(_ element: JSONValue) {
         elements.append(element)
     }

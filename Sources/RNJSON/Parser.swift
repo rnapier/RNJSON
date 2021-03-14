@@ -12,7 +12,7 @@ public class JSONParser {
     public func parse(data: Data) throws -> JSONValue {
         var tokens = try JSONTokenizer().allTokens(from: data)[...]
         let value = try parseValue(for: &tokens)
-        guard tokens.isEmpty else { throw JSONError.unexpectedToken }
+        guard tokens.isEmpty else { throw JSONError.unexpectedToken(at: tokens.first!.location, expected: [], found: tokens.first!) }
         return value
     }
 
@@ -22,13 +22,13 @@ public class JSONParser {
 
         switch token {
         case is JSONTokenArrayOpen:    return try parseArray(for: &tokens)
-        case is JSONTokenObjectOpen:   return try parseArray(for: &tokens)
+        case is JSONTokenObjectOpen:   return try parseObject(for: &tokens)
         case is JSONTokenLiteralTrue:  return JSONBool(true)
         case is JSONTokenLiteralFalse: return JSONBool(false)
         case is JSONTokenLiteralNull:  return JSONNull()
-        case is JSONTokenString:       return try JSONString(data: token.data)
-        case is JSONTokenNumber:       return try JSONNumber(data: token.data)
-        default:                       throw JSONError.unexpectedToken
+        case let t as JSONTokenString: return try JSONString(t)
+        case let t as JSONTokenNumber: return try JSONNumber(t)
+        default:                       throw JSONError.unexpectedToken(at: token.location, expected: [JSONTokenArrayOpen.self, JSONTokenObjectOpen.self, JSONTokenLiteralTrue.self, JSONTokenLiteralFalse.self, JSONTokenLiteralNull.self, JSONTokenString.self, JSONTokenNumber.self], found: token)
         }
     }
 
@@ -44,7 +44,7 @@ public class JSONParser {
             switch token {
             case is JSONTokenArrayClose: break
             case is JSONTokenListSeparator: token = try tokens.requireToken()
-            default: throw JSONError.unexpectedToken
+            default: throw JSONError.unexpectedToken(at: token.location, expected: [JSONTokenArrayClose.self, JSONTokenListSeparator.self], found: token)
             }
         }
         return elements
@@ -57,30 +57,33 @@ public class JSONParser {
         if token is JSONTokenObjectClose { return object }
 
         while true {
-            guard let stringToken = token as? JSONTokenString,
-                  let key = stringToken.utf8String
-            else { throw JSONError.unexpectedToken }
+            guard let stringToken = token as? JSONTokenString
+            else { throw JSONError.unexpectedToken(at: token.location, expected: [JSONTokenString.self], found: token) }
 
-            guard try tokens.requireToken() is JSONTokenKeyValueSeparator else { throw JSONError.unexpectedToken }
+            let key = try JSONString(stringToken)
 
-            object.add(value: try parseValue(for: &tokens), for: key)
+            let separator = try tokens.requireToken()
+            guard separator is JSONTokenKeyValueSeparator else { throw JSONError.unexpectedToken(at: separator.location, expected: [JSONTokenKeyValueSeparator.self], found: separator) }
+
+            object.add(value: try parseValue(for: &tokens), for: key.string)
 
             token = try tokens.requireToken()
 
             switch token {
-            case is JSONTokenObjectClose: break
+            case is JSONTokenObjectClose: return object
             case is JSONTokenListSeparator: token = try tokens.requireToken()
-            default: throw JSONError.unexpectedToken
+            default: throw JSONError.unexpectedToken(at: token.location, expected: [JSONTokenObjectClose.self, JSONTokenListSeparator.self], found: token)
             }
         }
-        return object
     }
 }
 
 
 private extension Collection where Element == JSONToken, SubSequence == Self {
     mutating func removeWhitespace() {
-        self = self.drop(while: \.isIgnored)
+        while let byte = self.first, byte.isIgnored {
+            self.removeFirst()
+        }
     }
 
     mutating func requireToken() throws -> JSONToken {

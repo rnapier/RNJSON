@@ -119,14 +119,14 @@ final class RNJSONTests: XCTestCase {
 //        XCTAssertEqual(result, expected)
 //    }
 //
-//    func testObjectDecode() throws {
-//        let json = "{\"name\":\"Bob\",\"age\":43}"
-//        let result = try JSONParser().parse(data: Data(json.utf8))
-//        let expectedValue = ["name": JSONString("Bob"), "age": JSONNumber(43)]
-//
-//        XCTAssert(result is JSONObject)
-//        XCTAssertEqual(try result.objectValue(), expectedValue)
-//    }
+    func testObjectDecode() throws {
+        let json = "{\"name\":\"Bob\",\"age\":43}"
+        let result = try JSONParser().parse(data: Data(json.utf8))
+
+        XCTAssert(result is JSONObject)
+        XCTAssertEqual(try result["name"]?.stringValue(), "Bob")
+        XCTAssertEqual(try result["age"]?.intValue(), 43)
+    }
 //
 //    func testArrayEncode() throws {
 //        let value = RNJSON([1,2,3])

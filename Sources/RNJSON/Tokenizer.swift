@@ -11,35 +11,38 @@ public protocol JSONToken {
     var data: Data { get }
     var possiblyTruncated: Bool { get }
     var isIgnored: Bool { get }
+    var location: Int { get }
 }
 
 public extension JSONToken {
     var length: Int { data.count }
     var possiblyTruncated: Bool { false }
     var isIgnored: Bool { false }
+    var location: Int { data.startIndex }
 }
 
-public struct JSONTokenArrayOpen: JSONToken { public let data = Data("[".utf8) }
-public struct JSONTokenArrayClose: JSONToken { public let data = Data("]".utf8) }
+public struct JSONTokenArrayOpen: JSONToken { public let data = Data("[".utf8); public var location: Int }
+public struct JSONTokenArrayClose: JSONToken { public let data = Data("]".utf8); public var location: Int }
 
-public struct JSONTokenObjectOpen: JSONToken { public let data = Data("{".utf8) }
-public struct JSONTokenObjectClose: JSONToken { public let data = Data("}".utf8) }
+public struct JSONTokenObjectOpen: JSONToken { public let data = Data("{".utf8); public var location: Int }
+public struct JSONTokenObjectClose: JSONToken { public let data = Data("}".utf8); public var location: Int }
 
-public struct JSONTokenKeyValueSeparator: JSONToken { public let data = Data(":".utf8)}
-public struct JSONTokenListSeparator: JSONToken { public let data = Data(",".utf8)}
+public struct JSONTokenKeyValueSeparator: JSONToken { public let data = Data(":".utf8); public var location: Int }
+public struct JSONTokenListSeparator: JSONToken { public let data = Data(",".utf8); public var location: Int }
 
-public struct JSONTokenLiteralTrue: JSONToken { public let data = Data("true".utf8) }
-public struct JSONTokenLiteralFalse: JSONToken { public let data = Data("false".utf8) }
-public struct JSONTokenLiteralNull: JSONToken { public let data = Data("null".utf8) }
+public struct JSONTokenLiteralTrue: JSONToken { public let data = Data("true".utf8); public var location: Int }
+public struct JSONTokenLiteralFalse: JSONToken { public let data = Data("false".utf8); public var location: Int }
+public struct JSONTokenLiteralNull: JSONToken { public let data = Data("null".utf8); public var location: Int }
 
 public struct JSONTokenString: JSONToken {
     public var data: Data
-    public var utf8String: String? { String(data: data, encoding: .utf8) }
+    public var contents: String? { String(data: data.dropFirst().dropLast(), encoding: .utf8) }
 }
 
 public struct JSONTokenNumber: JSONToken {
     public var data: Data
     public var possiblyTruncated: Bool
+    public var contents: String? { String(data: data, encoding: .utf8) }
 }
 
 public struct JSONTokenWhitespace: JSONToken {
@@ -85,31 +88,31 @@ public struct JSONTokenizer {
 
         switch byte {
         case 0x5b: // [
-            return JSONTokenArrayOpen()
+            return JSONTokenArrayOpen(location: data.startIndex)
 
         case 0x7b: // {
-            return JSONTokenObjectOpen()
+            return JSONTokenObjectOpen(location: data.startIndex)
 
         case 0x5d: // ]
-            return JSONTokenArrayClose()
+            return JSONTokenArrayClose(location: data.startIndex)
 
         case 0x7d: // }
-            return JSONTokenObjectClose()
+            return JSONTokenObjectClose(location: data.startIndex)
 
         case 0x3a: // :
-            return JSONTokenKeyValueSeparator()
+            return JSONTokenKeyValueSeparator(location: data.startIndex)
 
         case 0x2c: // ,
-            return JSONTokenListSeparator()
+            return JSONTokenListSeparator(location: data.startIndex)
 
         case 0x74: // t(rue)
-            return try extract(JSONTokenLiteralTrue(), from: data)
+            return try extract(JSONTokenLiteralTrue(location: data.startIndex), from: data)
 
         case 0x66: // f(alse)
-            return try extract(JSONTokenLiteralFalse(), from: data)
+            return try extract(JSONTokenLiteralFalse(location: data.startIndex), from: data)
 
         case 0x6E: // n(ull)
-            return try extract(JSONTokenLiteralNull(), from: data)
+            return try extract(JSONTokenLiteralNull(location: data.startIndex), from: data)
 
         case 0x22: // "
             return try extractString(from: data)
@@ -121,7 +124,7 @@ public struct JSONTokenizer {
             return extractWhitespace(from: data)
 
         default:
-            throw JSONError.unexpectedToken
+            throw JSONError.unexpectedByte(at: data.startIndex, found: [byte])
         }
     }
 
@@ -131,7 +134,7 @@ public struct JSONTokenizer {
 
         // Check that the starting data matches needle
         guard data.starts(with: needle.prefix(data.count)) else {
-            throw JSONError.unexpectedToken
+            throw JSONError.unexpectedByte(at: data.startIndex, found: Array(token.data.prefix(needle.count)))
         }
 
         // Check that the complete needle is found
