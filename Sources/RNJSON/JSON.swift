@@ -28,7 +28,7 @@ public protocol JSONValue {
     func get(_ index: Int) throws -> JSONValue
     subscript(_ index: Int) -> JSONValue? { get }
 
-    func isNull() -> Bool
+    var isNull: Bool { get }
 }
 
 // Default implementations
@@ -50,7 +50,7 @@ public extension JSONValue {
     func get(_ index: Int) throws -> JSONValue { throw JSONError.typeMismatch }
     subscript(_ index: Int) -> JSONValue? { nil }
 
-    func isNull() -> Bool { false }
+    var isNull: Bool { false }
 }
 
 public struct JSONString: JSONValue {
@@ -111,7 +111,7 @@ public struct JSONArray: JSONValue {
 }
 
 public struct JSONNull: JSONValue {
-    public func isNull() -> Bool { true }
+    public var isNull: Bool { true }
 }
 
 

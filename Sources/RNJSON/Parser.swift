@@ -18,8 +18,6 @@ public class JSONParser {
 
     func parseValue<Tokens>(for tokens: inout Tokens) throws -> JSONValue where Tokens: Collection, Tokens.Element == JSONToken, Tokens.SubSequence == Tokens {
         let token = try tokens.requireToken()
-//        tokens.removeWhitespace()
-//        guard let token = tokens.popFirst() else { throw JSONError.dataTruncated }
 
         switch token {
         case is JSONTokenArrayOpen:    return try parseArray(for: &tokens)

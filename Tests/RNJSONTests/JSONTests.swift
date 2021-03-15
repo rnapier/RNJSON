@@ -155,14 +155,13 @@ final class RNJSONTests: XCTestCase {
 //        XCTAssertEqual(result, expected)
 //    }
 //
-//    func testNullDecode() throws {
-//        let json = "null"
-//        let result = try JSONDecoder().stringDecode(RNJSON.self, from:json)
-//        let expectedValue = RNJSON(NSNull())
-//
-//        XCTAssertEqual(result, expectedValue)
-//        XCTAssert(expectedValue.isNull)
-//    }
+    func testNullDecode() throws {
+        let json = "null"
+        let result = try JSONParser().parse(data: Data(json.utf8))
+
+        XCTAssert(result is JSONNull)
+        XCTAssert(result.isNull)
+    }
 //
 ////    func testNilEncode() throws {
 ////        let value = JSON(nil)
