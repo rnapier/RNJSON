@@ -59,6 +59,7 @@ public struct JSONTokenWhitespace: JSONToken {
 
 public struct JSONTokenizer {
     private let whitespaceBytes: [UInt8] = [0x09, 0x0a, 0x0d, 0x20]
+    private let newlineBytes: [UInt8] = [0x0a, 0x0d]
     private let numberBytes: [UInt8] = [0x2b,   // +
                                         0x2d,   // -
                                         0x2e,   // .
@@ -173,14 +174,18 @@ public struct JSONTokenizer {
     }
 
     // Extracts a number. Does not validate the number. Any sequence of "number-like" characters is accepted.
-    // Note that it is possible that this number is truncated; the caller must check for that situation.
+    // Note that it is possible that this number is truncated if data is incomplete; the caller must check for that situation.
     private func extractNumber(from data: Data) -> JSONToken {
         let number = data.prefix { numberBytes.contains($0) }
         return JSONTokenNumber(data: number, possiblyTruncated: number.count == data.count)
     }
 
+    // Extracts whitespace until the last newline character. This splits trailing whitespace from indentation.
+    // Blank lines are attached to the trailing whitespace
     private func extractWhitespace(from data: Data) -> JSONToken {
-        let whitespace = data.prefix { whitespaceBytes.contains($0) }
-        return JSONTokenWhitespace(data: whitespace, possiblyTruncated: whitespace.count == data.count)
+        let allWhitespace = data.prefix(while: { whitespaceBytes.contains($0) })
+        let endTrailingIndex = allWhitespace.lastIndex(where: { newlineBytes.contains($0) } )?.advanced(by: 1) ?? allWhitespace.endIndex
+        let trailingWhitespace = allWhitespace[..<endTrailingIndex]
+        return JSONTokenWhitespace(data: trailingWhitespace, possiblyTruncated: trailingWhitespace.count == data.count)
     }
 }

@@ -28,7 +28,7 @@ final class JSONOrgTokenizerTests: XCTestCase {
 
         let tokens = try tokenizer.allTokens(from: json)
 
-        XCTAssertEqual(tokens.count, 301)
+        XCTAssertEqual(tokens.count, 343)
     }
 
     func testBareString() throws {
