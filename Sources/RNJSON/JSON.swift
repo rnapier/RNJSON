@@ -4,6 +4,7 @@ import Foundation
 public enum JSONError: Swift.Error {
     case unexpectedByte(at: Int, found: [UInt8])
     case unexpectedToken(at: Int, expected: [JSONToken.Type], found: JSONToken)
+    case unknownValue(JSONValue)
     case dataTruncated
     case typeMismatch
     case dataCorrupted
@@ -38,8 +39,6 @@ public protocol JSONValue {
     subscript(_ index: Int) -> JSONValue? { get }
 
     var isNull: Bool { get }
-
-    var metadata: [JSONMetadataKey: Any] { get }
 }
 
 // Default implementations
@@ -103,17 +102,17 @@ public struct JSONBool: JSONValue {
 }
 
 public struct JSONObject: JSONValue {
-    public var keyValues: [(key: String, value: JSONValue)]
+    public var keyValues: [(key: JSONString, value: JSONValue)]
     public var metadata: [JSONMetadataKey: Any] = [:]
     public init() { self.keyValues = [] }
-    public mutating func add(value: JSONValue, for key: String) {
+    public mutating func add(value: JSONValue, for key: JSONString) {
         keyValues.append((key: key, value: value))
     }
 
     public var count: Int { keyValues.count }
     public func get(_ key: String) throws -> JSONValue { try self[key] ?? { throw JSONError.missingValue }() }
-    public func getAll(_ key: String) -> [JSONValue] { keyValues.filter({ $0.key == key }).map(\.value) }
-    public subscript(_ key: String) -> JSONValue? { keyValues.first(where: { $0.key == key })?.value }
+    public func getAll(_ key: String) -> [JSONValue] { keyValues.filter({ $0.key.string == key }).map(\.value) }
+    public subscript(_ key: String) -> JSONValue? { keyValues.first(where: { $0.key.string == key })?.value }
 }
 
 public struct JSONArray: JSONValue {

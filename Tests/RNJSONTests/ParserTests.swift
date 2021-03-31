@@ -1,17 +1,6 @@
 import XCTest
 @testable import RNJSON
 
-//struct Customer: Decodable, Equatable {
-//   let personal: Personal
-//   let source: String
-//}
-//
-//struct Personal: Decodable, Equatable {
-//    let name: String
-//    let customer_id: String
-//    let misc: JSONValue
-//}
-
 extension JSONEncoder {
     func stringEncode<T>(_ value: T) throws -> String where T : Encodable {
         // JSONEncoder promises to always return UTF-8
@@ -26,14 +15,6 @@ extension JSONDecoder {
 }
 
 final class RNJSONTests: XCTestCase {
-//    func testStringEncode() throws {
-//        let value = JSONString("test")
-//        let result = try JSONEncoder().stringEncode(value)
-//        let expected = "\"test\""
-//
-//        XCTAssertEqual(result, expected)
-//    }
-
     func testStringDecode() throws {
         let json = "\"test\""
         let result = try JSONParser().parse(data: Data(json.utf8))
@@ -43,14 +24,6 @@ final class RNJSONTests: XCTestCase {
         XCTAssertEqual(try result.stringValue(), expectedValue)
     }
 
-//    func testIntEncode() throws {
-//        let value = RNJSON.number("1")
-//        let result = try JSONEncoder().stringEncode(value)
-//        let expected = "1"
-//
-//        XCTAssertEqual(result, expected)
-//    }
-//
     func testIntDecode() throws {
         let json = "1"
         let result = try JSONParser().parse(data: Data(json.utf8))
@@ -59,15 +32,7 @@ final class RNJSONTests: XCTestCase {
         XCTAssert(result is JSONNumber)
         XCTAssertEqual(try result.intValue(), expectedValue)
     }
-//
-//    func testDoubleEncode() throws {
-//        let value = RNJSON(1.1)
-//        let result = try JSONEncoder().stringEncode(value)
-//        let expected = "1.1"
-//
-//        XCTAssertEqual(result, expected)
-//    }
-//
+
     func testDoubleDecode() throws {
         let json = "1.1"
         let result = try JSONParser().parse(data: Data(json.utf8))
@@ -76,32 +41,7 @@ final class RNJSONTests: XCTestCase {
         XCTAssert(result is JSONNumber)
         XCTAssertEqual(try result.doubleValue(), expectedValue)
     }
-//
-//    func testUInt32Encode() throws {
-//        let value = RNJSON(1 as UInt32)
-//        let result = try JSONEncoder().stringEncode(value)
-//        let expected = "1"
-//
-//        XCTAssertEqual(result, expected)
-//    }
-//
-//    func testUInt32Decode() throws {
-//        let json = "1"
-//        let result = try JSONDecoder().stringDecode(RNJSON.self, from:json)
-//        let expectedValue = 1 as UInt32
-//
-//        XCTAssertEqual(result, RNJSON(expectedValue))
-//        XCTAssertEqual(try result.numberValue().uint32Value, expectedValue)
-//    }
-//
-//    func testBoolEncode() throws {
-//        let value = RNJSON(true)
-//        let result = try JSONEncoder().stringEncode(value)
-//        let expected = "true"
-//
-//        XCTAssertEqual(result, expected)
-//    }
-//
+
     func testBoolDecode() throws {
         let json = "true"
         let result = try JSONParser().parse(data: Data(json.utf8))
@@ -110,15 +50,7 @@ final class RNJSONTests: XCTestCase {
         XCTAssert(result is JSONBool)
         XCTAssertEqual(try result.boolValue(), expectedValue)
     }
-//
-//    func testObjectEncode() throws {
-//        let value = RNJSON(["name": "Bob", "age": 43])
-//        let result = try JSONEncoder().stringEncode(value)
-//        let expected = "{\"age\":43,\"name\":\"Bob\"}"
-//
-//        XCTAssertEqual(result, expected)
-//    }
-//
+
     func testObjectDecode() throws {
         let json = "{\"name\":\"Bob\",\"age\":43}"
         let result = try JSONParser().parse(data: Data(json.utf8))
@@ -127,15 +59,7 @@ final class RNJSONTests: XCTestCase {
         XCTAssertEqual(try result["name"]?.stringValue(), "Bob")
         XCTAssertEqual(try result["age"]?.intValue(), 43)
     }
-//
-//    func testArrayEncode() throws {
-//        let value = RNJSON([1,2,3])
-//        let result = try JSONEncoder().stringEncode(value)
-//        let expected = "[1,2,3]"
-//
-//        XCTAssertEqual(result, expected)
-//    }
-//
+
     func testArrayDecode() throws {
         let json = "[1,2,3]"
         let result = try JSONParser().parse(data: Data(json.utf8))
@@ -146,15 +70,7 @@ final class RNJSONTests: XCTestCase {
         XCTAssertEqual(try result[1]?.intValue(), 2)
         XCTAssertEqual(try result[2]?.intValue(), 3)
     }
-//
-//    func testNullEncode() throws {
-//        let value = RNJSON(NSNull())
-//        let result = try JSONEncoder().stringEncode(value)
-//        let expected = "null"
-//
-//        XCTAssertEqual(result, expected)
-//    }
-//
+
     func testNullDecode() throws {
         let json = "null"
         let result = try JSONParser().parse(data: Data(json.utf8))
@@ -162,23 +78,7 @@ final class RNJSONTests: XCTestCase {
         XCTAssert(result is JSONNull)
         XCTAssert(result.isNull)
     }
-//
-////    func testNilEncode() throws {
-////        let value = JSON(nil)
-////        let result = try JSONEncoder().stringEncode(value)
-////        let expected = "null"
-////
-////        XCTAssertEqual(result, expected)
-////    }
-////
-////    func testNilDecode() throws {
-////        let json = "null"
-////        let result = try JSONDecoder().stringDecode(JSON.self, from:json)
-////        let expectedValue = JSON(nil)
-////
-////        XCTAssertEqual(result, expectedValue)
-////        XCTAssert(expectedValue.isNull)
-////    }
+
 //
 //    func testNestedDecode() throws {
 //        let json = Data("""

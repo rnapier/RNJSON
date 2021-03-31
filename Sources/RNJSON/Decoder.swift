@@ -7,6 +7,10 @@
 
 import Foundation
 
+//
+// TODO: Reimplement on Parser
+//
+
 private func implement(file: StaticString = #file, line: UInt = #line) -> Never { fatalError(file: file, line: line) }
 
 class RNJSONDecoder {

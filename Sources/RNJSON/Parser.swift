@@ -47,7 +47,10 @@ public class JSONParser {
             switch token {
             case is JSONTokenArrayClose: return elements
             case is JSONTokenListSeparator: elements.append(try parseValue(for: &tokens))
-            default: throw JSONError.unexpectedToken(at: token.location, expected: [JSONTokenArrayClose.self, JSONTokenListSeparator.self], found: token)
+
+            default: throw JSONError.unexpectedToken(at: token.location,
+                                                     expected: [JSONTokenArrayClose.self, JSONTokenListSeparator.self],
+                                                     found: token)
             }
         }
     }
@@ -65,9 +68,13 @@ public class JSONParser {
             let key = try JSONString(stringToken)
 
             let separator = try tokens.requireToken()
-            guard separator is JSONTokenKeyValueSeparator else { throw JSONError.unexpectedToken(at: separator.location, expected: [JSONTokenKeyValueSeparator.self], found: separator) }
+            guard separator is JSONTokenKeyValueSeparator else {
+                throw JSONError.unexpectedToken(at: separator.location,
+                                                expected: [JSONTokenKeyValueSeparator.self],
+                                                found: separator)
+            }
 
-            object.add(value: try parseValue(for: &tokens), for: key.string)
+            object.add(value: try parseValue(for: &tokens), for: key)
 
             token = try tokens.requireToken()
 

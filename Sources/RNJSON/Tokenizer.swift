@@ -57,7 +57,8 @@ public struct JSONTokenWhitespace: JSONToken {
 // example, it does not parse strings; it just looks for a double-quote followed by a non-escaped
 // double-quote. This allows parsers to deal with many kinds of technically invalid JSON.
 
-public struct JSONTokenizer {
+public class JSONTokenizer {
+    public init() {}
     private let whitespaceBytes: [UInt8] = [0x09, 0x0a, 0x0d, 0x20]
     private let newlineBytes: [UInt8] = [0x0a, 0x0d]
     private let numberBytes: [UInt8] = [0x2b,   // +
