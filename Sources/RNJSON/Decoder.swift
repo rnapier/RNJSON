@@ -1352,7 +1352,7 @@ private struct _JSONKeyedDecodingContainer<K : CodingKey> : KeyedDecodingContain
             throw DecodingError.keyNotFound(key, DecodingError.Context(codingPath: self.decoder.codingPath, debugDescription: "No value associated with key \(_errorDescription(of: key))."))
         }
 
-        return entry is NSNull
+        return entry.isNull
     }
 
     public func decode(_ type: Bool.Type, forKey key: Key) throws -> Bool {
@@ -1672,7 +1672,7 @@ private struct _JSONUnkeyedDecodingContainer : UnkeyedDecodingContainer {
             throw DecodingError.valueNotFound(JSONValue?.self, DecodingError.Context(codingPath: self.decoder.codingPath + [_JSONKey(index: self.currentIndex)], debugDescription: "Unkeyed container is at end."))
         }
 
-        if self.container[self.currentIndex] is NSNull {
+        if self.container[self.currentIndex]?.isNull == true {
             self.currentIndex += 1
             return true
         } else {
@@ -1931,7 +1931,7 @@ private struct _JSONUnkeyedDecodingContainer : UnkeyedDecodingContainer {
         }
 
         let value = self.container[self.currentIndex] ?? JSONNull()
-        guard !(value is NSNull) else {
+        guard !(value.isNull) else {
             throw DecodingError.valueNotFound(KeyedDecodingContainer<NestedKey>.self,
                                               DecodingError.Context(codingPath: self.codingPath,
                                                                     debugDescription: "Cannot get keyed decoding container -- found null value instead."))
@@ -1957,7 +1957,7 @@ private struct _JSONUnkeyedDecodingContainer : UnkeyedDecodingContainer {
         }
 
         let value = self.container[self.currentIndex] ?? JSONNull()
-        guard !(value is NSNull) else {
+        guard !(value.isNull) else {
             throw DecodingError.valueNotFound(UnkeyedDecodingContainer.self,
                                               DecodingError.Context(codingPath: self.codingPath,
                                                                     debugDescription: "Cannot get keyed decoding container -- found null value instead."))
@@ -2082,7 +2082,7 @@ private extension __JSONDecoder {
     /// Returns the given value unboxed from a container.
     func unbox(_ value: JSONValue, as type: Bool.Type) throws -> Bool? {
         try value.boolValue()
-//        guard !(value is NSNull) else { return nil }
+//        guard !(value.isNull) else { return nil }
 //
 //        if let number = value as? NSNumber {
 //            // TODO: Add a flag to coerce non-boolean numbers into Bools?
@@ -2104,7 +2104,7 @@ private extension __JSONDecoder {
 
     func unbox(_ value: JSONValue, as type: Int.Type) throws -> Int? {
         try value.intValue()
-//        guard !(value is NSNull) else { return nil }
+//        guard !(value.isNull) else { return nil }
 //
 //        guard let number = value as? NSNumber, number !== kCFBooleanTrue, number !== kCFBooleanFalse else {
 //            throw DecodingError._typeMismatch(at: self.codingPath, expectation: type, reality: value)
@@ -2120,7 +2120,7 @@ private extension __JSONDecoder {
 
     func unbox(_ value: JSONValue, as type: Int8.Type) throws -> Int8? {
         try Int8(exactly: value.intValue())
-//        guard !(value is NSNull) else { return nil }
+//        guard !(value.isNull) else { return nil }
 //
 //        guard let number = value as? NSNumber, number !== kCFBooleanTrue, number !== kCFBooleanFalse else {
 //            throw DecodingError._typeMismatch(at: self.codingPath, expectation: type, reality: value)
@@ -2136,7 +2136,7 @@ private extension __JSONDecoder {
 
     func unbox(_ value: JSONValue, as type: Int16.Type) throws -> Int16? {
         try Int16(exactly: value.intValue())
-//        guard !(value is NSNull) else { return nil }
+//        guard !(value.isNull) else { return nil }
 //
 //        guard let number = value as? NSNumber, number !== kCFBooleanTrue, number !== kCFBooleanFalse else {
 //            throw DecodingError._typeMismatch(at: self.codingPath, expectation: type, reality: value)
@@ -2152,7 +2152,7 @@ private extension __JSONDecoder {
 
     func unbox(_ value: JSONValue, as type: Int32.Type) throws -> Int32? {
         try Int32(exactly: value.intValue())
-//        guard !(value is NSNull) else { return nil }
+//        guard !(value.isNull) else { return nil }
 //
 //        guard let number = value as? NSNumber, number !== kCFBooleanTrue, number !== kCFBooleanFalse else {
 //            throw DecodingError._typeMismatch(at: self.codingPath, expectation: type, reality: value)
@@ -2169,7 +2169,7 @@ private extension __JSONDecoder {
     func unbox(_ value: JSONValue, as type: Int64.Type) throws -> Int64? {
         try Int64(exactly: value.intValue())
 //
-//        guard !(value is NSNull) else { return nil }
+//        guard !(value.isNull) else { return nil }
 //
 //        guard let number = value as? NSNumber, number !== kCFBooleanTrue, number !== kCFBooleanFalse else {
 //            throw DecodingError._typeMismatch(at: self.codingPath, expectation: type, reality: value)
@@ -2185,7 +2185,7 @@ private extension __JSONDecoder {
 
     func unbox(_ value: JSONValue, as type: UInt.Type) throws -> UInt? {
         try UInt(exactly: value.intValue())
-//        guard !(value is NSNull) else { return nil }
+//        guard !(value.isNull) else { return nil }
 //
 //        guard let number = value as? NSNumber, number !== kCFBooleanTrue, number !== kCFBooleanFalse else {
 //            throw DecodingError._typeMismatch(at: self.codingPath, expectation: type, reality: value)
@@ -2202,7 +2202,7 @@ private extension __JSONDecoder {
     func unbox(_ value: JSONValue, as type: UInt8.Type) throws -> UInt8? {
         try UInt8(exactly: value.intValue())
 //
-//        guard !(value is NSNull) else { return nil }
+//        guard !(value.isNull) else { return nil }
 //
 //        guard let number = value as? NSNumber, number !== kCFBooleanTrue, number !== kCFBooleanFalse else {
 //            throw DecodingError._typeMismatch(at: self.codingPath, expectation: type, reality: value)
@@ -2218,7 +2218,7 @@ private extension __JSONDecoder {
 
     func unbox(_ value: JSONValue, as type: UInt16.Type) throws -> UInt16? {
         try UInt16(exactly: value.intValue())
-//        guard !(value is NSNull) else { return nil }
+//        guard !(value.isNull) else { return nil }
 //
 //        guard let number = value as? NSNumber, number !== kCFBooleanTrue, number !== kCFBooleanFalse else {
 //            throw DecodingError._typeMismatch(at: self.codingPath, expectation: type, reality: value)
@@ -2234,7 +2234,7 @@ private extension __JSONDecoder {
 
     func unbox(_ value: JSONValue, as type: UInt32.Type) throws -> UInt32? {
         try UInt32(exactly: value.intValue())
-//        guard !(value is NSNull) else { return nil }
+//        guard !(value.isNull) else { return nil }
 //
 //        guard let number = value as? NSNumber, number !== kCFBooleanTrue, number !== kCFBooleanFalse else {
 //            throw DecodingError._typeMismatch(at: self.codingPath, expectation: type, reality: value)
@@ -2250,7 +2250,7 @@ private extension __JSONDecoder {
 
     func unbox(_ value: JSONValue, as type: UInt64.Type) throws -> UInt64? {
         try UInt64(exactly: value.intValue())
-//        guard !(value is NSNull) else { return nil }
+//        guard !(value.isNull) else { return nil }
 //
 //        guard let number = value as? NSNumber, number !== kCFBooleanTrue, number !== kCFBooleanFalse else {
 //            throw DecodingError._typeMismatch(at: self.codingPath, expectation: type, reality: value)
@@ -2266,7 +2266,7 @@ private extension __JSONDecoder {
 
     func unbox(_ value: JSONValue, as type: Float.Type) throws -> Float? {
         try Float(value.doubleValue())
-//        guard !(value is NSNull) else { return nil }
+//        guard !(value.isNull) else { return nil }
 //
 //        if let number = value as? NSNumber, number !== kCFBooleanTrue, number !== kCFBooleanFalse {
 //            // We are willing to return a Float by losing precision:
@@ -2313,7 +2313,7 @@ private extension __JSONDecoder {
 
     func unbox(_ value: JSONValue, as type: Double.Type) throws -> Double? {
         try value.doubleValue()
-//        guard !(value is NSNull) else { return nil }
+//        guard !(value.isNull) else { return nil }
 //
 //        if let number = value as? NSNumber, number !== kCFBooleanTrue, number !== kCFBooleanFalse {
 //            // We are always willing to return the number as a Double:
@@ -2348,14 +2348,13 @@ private extension __JSONDecoder {
     }
 
     func unbox(_ value: JSONValue, as type: String.Type) throws -> String? {
-        try value.stringValue()
-//        guard !(value is NSNull) else { return nil }
-//
-//        guard let string = value as? String else {
-//            throw DecodingError._typeMismatch(at: self.codingPath, expectation: type, reality: value)
-//        }
-//
-//        return string
+        guard !(value.isNull) else { return nil }
+
+        guard let string = try? value.stringValue() else {
+            throw DecodingError._typeMismatch(at: self.codingPath, expectation: type, reality: value)
+        }
+
+        return string
     }
 
     func unbox(_ value: JSONValue, as type: Date.Type) throws -> Date? {
@@ -2577,12 +2576,12 @@ extension DecodingError {
     /// - parameter value: The value whose type to describe.
     /// - returns: A string describing `value`.
     /// - precondition: `value` is one of the types below.
-    private static func _typeDescription(of value: Any) -> String {
-        if value is NSNull {
+    private static func _typeDescription(of value: JSONValue) -> String {
+        if value.isNull {
             return "a null value"
-        } else if value is NSNumber /* FIXME: If swift-corelibs-foundation isn't updated to use NSNumber, this check will be necessary: || value is Int || value is Double */ {
+        } else if value is JSONNumber /* FIXME: If swift-corelibs-foundation isn't updated to use NSNumber, this check will be necessary: || value is Int || value is Double */ {
             return "a number"
-        } else if value is String {
+        } else if value is JSONString {
             return "a string/data"
         } else if value is JSONArray {
             return "an array"

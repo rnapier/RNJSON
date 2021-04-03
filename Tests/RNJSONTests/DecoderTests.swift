@@ -21,7 +21,7 @@ final class RNJSONDecoderTests: XCTestCase {
             case .typeMismatch(let type, let context):
                 XCTAssert(type == String.self)
                 XCTAssert(context.codingPath.isEmpty)
-                XCTAssertEqual(context.debugDescription, "Expected to decode String.")
+                XCTAssertEqual(context.debugDescription, "Expected to decode String but found a number instead.")
                 XCTAssertNil(context.underlyingError)
             default: XCTFail()
             }
