@@ -2090,248 +2090,197 @@ private extension __JSONDecoder {
     }
 
     func unbox(_ value: JSONValue, as type: Int.Type) throws -> Int? {
-        try value.intValue()
-//        guard !(value.isNull) else { return nil }
-//
-//        guard let number = value as? NSNumber, number !== kCFBooleanTrue, number !== kCFBooleanFalse else {
-//            throw DecodingError._typeMismatch(at: self.codingPath, expectation: type, reality: value)
-//        }
-//
-//        let int = number.intValue
-//        guard NSNumber(value: int) == number else {
-//            throw DecodingError.dataCorrupted(DecodingError.Context(codingPath: self.codingPath, debugDescription: "Parsed JSON number <\(number)> does not fit in \(type)."))
-//        }
-//
-//        return int
+        guard !(value.isNull) else { return nil }
+
+        guard let number = value as? JSONNumber else {
+            throw DecodingError._typeMismatch(at: self.codingPath, expectation: type, reality: value)
+        }
+
+        guard let result = Int(number.digitString) else {
+            throw DecodingError.dataCorrupted(DecodingError.Context(codingPath: self.codingPath, debugDescription: "Parsed JSON number <\(number)> does not fit in \(type)."))
+        }
+
+        return result
     }
 
     func unbox(_ value: JSONValue, as type: Int8.Type) throws -> Int8? {
-        try Int8(exactly: value.intValue())
-//        guard !(value.isNull) else { return nil }
-//
-//        guard let number = value as? NSNumber, number !== kCFBooleanTrue, number !== kCFBooleanFalse else {
-//            throw DecodingError._typeMismatch(at: self.codingPath, expectation: type, reality: value)
-//        }
-//
-//        let int8 = number.int8Value
-//        guard NSNumber(value: int8) == number else {
-//            throw DecodingError.dataCorrupted(DecodingError.Context(codingPath: self.codingPath, debugDescription: "Parsed JSON number <\(number)> does not fit in \(type)."))
-//        }
-//
-//        return int8
+        guard !(value.isNull) else { return nil }
+
+        guard let number = value as? JSONNumber else {
+            throw DecodingError._typeMismatch(at: self.codingPath, expectation: type, reality: value)
+        }
+
+        guard let result = Int8(number.digitString) else {
+            throw DecodingError.dataCorrupted(DecodingError.Context(codingPath: self.codingPath, debugDescription: "Parsed JSON number <\(number)> does not fit in \(type)."))
+        }
+
+        return result
     }
 
     func unbox(_ value: JSONValue, as type: Int16.Type) throws -> Int16? {
-        try Int16(exactly: value.intValue())
-//        guard !(value.isNull) else { return nil }
-//
-//        guard let number = value as? NSNumber, number !== kCFBooleanTrue, number !== kCFBooleanFalse else {
-//            throw DecodingError._typeMismatch(at: self.codingPath, expectation: type, reality: value)
-//        }
-//
-//        let int16 = number.int16Value
-//        guard NSNumber(value: int16) == number else {
-//            throw DecodingError.dataCorrupted(DecodingError.Context(codingPath: self.codingPath, debugDescription: "Parsed JSON number <\(number)> does not fit in \(type)."))
-//        }
-//
-//        return int16
+        guard !(value.isNull) else { return nil }
+
+        guard let number = value as? JSONNumber else {
+            throw DecodingError._typeMismatch(at: self.codingPath, expectation: type, reality: value)
+        }
+
+        guard let result = Int16(number.digitString) else {
+            throw DecodingError.dataCorrupted(DecodingError.Context(codingPath: self.codingPath, debugDescription: "Parsed JSON number <\(number)> does not fit in \(type)."))
+        }
+
+        return result
     }
 
     func unbox(_ value: JSONValue, as type: Int32.Type) throws -> Int32? {
-        try Int32(exactly: value.intValue())
-//        guard !(value.isNull) else { return nil }
-//
-//        guard let number = value as? NSNumber, number !== kCFBooleanTrue, number !== kCFBooleanFalse else {
-//            throw DecodingError._typeMismatch(at: self.codingPath, expectation: type, reality: value)
-//        }
-//
-//        let int32 = number.int32Value
-//        guard NSNumber(value: int32) == number else {
-//            throw DecodingError.dataCorrupted(DecodingError.Context(codingPath: self.codingPath, debugDescription: "Parsed JSON number <\(number)> does not fit in \(type)."))
-//        }
-//
-//        return int32
+        guard !(value.isNull) else { return nil }
+
+        guard let number = value as? JSONNumber else {
+            throw DecodingError._typeMismatch(at: self.codingPath, expectation: type, reality: value)
+        }
+
+        guard let result = Int32(number.digitString) else {
+            throw DecodingError.dataCorrupted(DecodingError.Context(codingPath: self.codingPath, debugDescription: "Parsed JSON number <\(number)> does not fit in \(type)."))
+        }
+
+        return result
     }
 
     func unbox(_ value: JSONValue, as type: Int64.Type) throws -> Int64? {
-        try Int64(exactly: value.intValue())
-//
-//        guard !(value.isNull) else { return nil }
-//
-//        guard let number = value as? NSNumber, number !== kCFBooleanTrue, number !== kCFBooleanFalse else {
-//            throw DecodingError._typeMismatch(at: self.codingPath, expectation: type, reality: value)
-//        }
-//
-//        let int64 = number.int64Value
-//        guard NSNumber(value: int64) == number else {
-//            throw DecodingError.dataCorrupted(DecodingError.Context(codingPath: self.codingPath, debugDescription: "Parsed JSON number <\(number)> does not fit in \(type)."))
-//        }
-//
-//        return int64
+        guard !(value.isNull) else { return nil }
+
+        guard let number = value as? JSONNumber else {
+            throw DecodingError._typeMismatch(at: self.codingPath, expectation: type, reality: value)
+        }
+
+        guard let result = Int64(number.digitString) else {
+            throw DecodingError.dataCorrupted(DecodingError.Context(codingPath: self.codingPath, debugDescription: "Parsed JSON number <\(number)> does not fit in \(type)."))
+        }
+
+        return result
+
     }
 
     func unbox(_ value: JSONValue, as type: UInt.Type) throws -> UInt? {
-        try UInt(exactly: value.intValue())
-//        guard !(value.isNull) else { return nil }
-//
-//        guard let number = value as? NSNumber, number !== kCFBooleanTrue, number !== kCFBooleanFalse else {
-//            throw DecodingError._typeMismatch(at: self.codingPath, expectation: type, reality: value)
-//        }
-//
-//        let uint = number.uintValue
-//        guard NSNumber(value: uint) == number else {
-//            throw DecodingError.dataCorrupted(DecodingError.Context(codingPath: self.codingPath, debugDescription: "Parsed JSON number <\(number)> does not fit in \(type)."))
-//        }
-//
-//        return uint
+        guard !(value.isNull) else { return nil }
+
+        guard let number = value as? JSONNumber else {
+            throw DecodingError._typeMismatch(at: self.codingPath, expectation: type, reality: value)
+        }
+
+        guard let result = UInt(number.digitString) else {
+            throw DecodingError.dataCorrupted(DecodingError.Context(codingPath: self.codingPath, debugDescription: "Parsed JSON number <\(number)> does not fit in \(type)."))
+        }
+
+        return result
+
     }
 
     func unbox(_ value: JSONValue, as type: UInt8.Type) throws -> UInt8? {
-        try UInt8(exactly: value.intValue())
-//
-//        guard !(value.isNull) else { return nil }
-//
-//        guard let number = value as? NSNumber, number !== kCFBooleanTrue, number !== kCFBooleanFalse else {
-//            throw DecodingError._typeMismatch(at: self.codingPath, expectation: type, reality: value)
-//        }
-//
-//        let uint8 = number.uint8Value
-//        guard NSNumber(value: uint8) == number else {
-//            throw DecodingError.dataCorrupted(DecodingError.Context(codingPath: self.codingPath, debugDescription: "Parsed JSON number <\(number)> does not fit in \(type)."))
-//        }
-//
-//        return uint8
+        guard !(value.isNull) else { return nil }
+
+        guard let number = value as? JSONNumber else {
+            throw DecodingError._typeMismatch(at: self.codingPath, expectation: type, reality: value)
+        }
+
+        guard let result = UInt8(number.digitString) else {
+            throw DecodingError.dataCorrupted(DecodingError.Context(codingPath: self.codingPath, debugDescription: "Parsed JSON number <\(number)> does not fit in \(type)."))
+        }
+
+        return result
     }
 
     func unbox(_ value: JSONValue, as type: UInt16.Type) throws -> UInt16? {
-        try UInt16(exactly: value.intValue())
-//        guard !(value.isNull) else { return nil }
-//
-//        guard let number = value as? NSNumber, number !== kCFBooleanTrue, number !== kCFBooleanFalse else {
-//            throw DecodingError._typeMismatch(at: self.codingPath, expectation: type, reality: value)
-//        }
-//
-//        let uint16 = number.uint16Value
-//        guard NSNumber(value: uint16) == number else {
-//            throw DecodingError.dataCorrupted(DecodingError.Context(codingPath: self.codingPath, debugDescription: "Parsed JSON number <\(number)> does not fit in \(type)."))
-//        }
-//
-//        return uint16
+        guard !(value.isNull) else { return nil }
+
+        guard let number = value as? JSONNumber else {
+            throw DecodingError._typeMismatch(at: self.codingPath, expectation: type, reality: value)
+        }
+
+        guard let result = UInt16(number.digitString) else {
+            throw DecodingError.dataCorrupted(DecodingError.Context(codingPath: self.codingPath, debugDescription: "Parsed JSON number <\(number)> does not fit in \(type)."))
+        }
+
+        return result
     }
 
     func unbox(_ value: JSONValue, as type: UInt32.Type) throws -> UInt32? {
-        try UInt32(exactly: value.intValue())
-//        guard !(value.isNull) else { return nil }
-//
-//        guard let number = value as? NSNumber, number !== kCFBooleanTrue, number !== kCFBooleanFalse else {
-//            throw DecodingError._typeMismatch(at: self.codingPath, expectation: type, reality: value)
-//        }
-//
-//        let uint32 = number.uint32Value
-//        guard NSNumber(value: uint32) == number else {
-//            throw DecodingError.dataCorrupted(DecodingError.Context(codingPath: self.codingPath, debugDescription: "Parsed JSON number <\(number)> does not fit in \(type)."))
-//        }
-//
-//        return uint32
+        guard !(value.isNull) else { return nil }
+
+        guard let number = value as? JSONNumber else {
+            throw DecodingError._typeMismatch(at: self.codingPath, expectation: type, reality: value)
+        }
+
+        guard let result = UInt32(number.digitString) else {
+            throw DecodingError.dataCorrupted(DecodingError.Context(codingPath: self.codingPath, debugDescription: "Parsed JSON number <\(number)> does not fit in \(type)."))
+        }
+
+        return result
     }
 
     func unbox(_ value: JSONValue, as type: UInt64.Type) throws -> UInt64? {
-        try UInt64(exactly: value.intValue())
-//        guard !(value.isNull) else { return nil }
-//
-//        guard let number = value as? NSNumber, number !== kCFBooleanTrue, number !== kCFBooleanFalse else {
-//            throw DecodingError._typeMismatch(at: self.codingPath, expectation: type, reality: value)
-//        }
-//
-//        let uint64 = number.uint64Value
-//        guard NSNumber(value: uint64) == number else {
-//            throw DecodingError.dataCorrupted(DecodingError.Context(codingPath: self.codingPath, debugDescription: "Parsed JSON number <\(number)> does not fit in \(type)."))
-//        }
-//
-//        return uint64
+        guard !(value.isNull) else { return nil }
+
+        guard let number = value as? JSONNumber else {
+            throw DecodingError._typeMismatch(at: self.codingPath, expectation: type, reality: value)
+        }
+
+        guard let result = UInt64(number.digitString) else {
+            throw DecodingError.dataCorrupted(DecodingError.Context(codingPath: self.codingPath, debugDescription: "Parsed JSON number <\(number)> does not fit in \(type)."))
+        }
+
+        return result
     }
 
     func unbox(_ value: JSONValue, as type: Float.Type) throws -> Float? {
-        try Float(value.doubleValue())
-//        guard !(value.isNull) else { return nil }
-//
-//        if let number = value as? NSNumber, number !== kCFBooleanTrue, number !== kCFBooleanFalse {
-//            // We are willing to return a Float by losing precision:
-//            // * If the original value was integral,
-//            //   * and the integral value was > Float.greatestFiniteMagnitude, we will fail
-//            //   * and the integral value was <= Float.greatestFiniteMagnitude, we are willing to lose precision past 2^24
-//            // * If it was a Float, you will get back the precise value
-//            // * If it was a Double or Decimal, you will get back the nearest approximation if it will fit
-//            let double = number.doubleValue
-//            guard abs(double) <= Double(Float.greatestFiniteMagnitude) else {
-//                throw DecodingError.dataCorrupted(DecodingError.Context(codingPath: self.codingPath, debugDescription: "Parsed JSON number \(number) does not fit in \(type)."))
-//            }
-//
-//            return Float(double)
-//
-//        /* FIXME: If swift-corelibs-foundation doesn't change to use NSNumber, this code path will need to be included and tested:
-//        } else if let double = value as? Double {
-//            if abs(double) <= Double(Float.max) {
-//                return Float(double)
-//            }
-//
-//            overflow = true
-//        } else if let int = value as? Int {
-//            if let float = Float(exactly: int) {
-//                return float
-//            }
-//
-//            overflow = true
-//        */
-//
-//        } else if let string = value as? String,
-//            case .convertFromString(let posInfString, let negInfString, let nanString) = self.options.nonConformingFloatDecodingStrategy {
-//            if string == posInfString {
-//                return Float.infinity
-//            } else if string == negInfString {
-//                return -Float.infinity
-//            } else if string == nanString {
-//                return Float.nan
-//            }
-//        }
-//
-//        throw DecodingError._typeMismatch(at: self.codingPath, expectation: type, reality: value)
+        guard !(value.isNull) else { return nil }
+
+        if let number = value as? JSONNumber {
+            // We are willing to return a Float by losing precision:
+            // * If the original value was integral,
+            //   * and the integral value was > Float.greatestFiniteMagnitude, we will fail
+            //   * and the integral value was <= Float.greatestFiniteMagnitude, we are willing to lose precision past 2^24
+            // * If it was a Float, you will get back the precise value
+            // * If it was a Double or Decimal, you will get back the nearest approximation if it will fit
+            guard let result = Float(number.digitString) else {
+                throw DecodingError.dataCorrupted(DecodingError.Context(codingPath: self.codingPath, debugDescription: "Parsed JSON number \(number) does not fit in \(type)."))
+            }
+
+            return result
+        } else if let jsonString = value as? JSONString,
+            case .convertFromString(let posInfString, let negInfString, let nanString) = self.options.nonConformingFloatDecodingStrategy {
+            if jsonString.string == posInfString {
+                return Float.infinity
+            } else if jsonString.string == negInfString {
+                return -Float.infinity
+            } else if jsonString.string == nanString {
+                return Float.nan
+            }
+        }
+
+        throw DecodingError._typeMismatch(at: self.codingPath, expectation: type, reality: value)
     }
 
     func unbox(_ value: JSONValue, as type: Double.Type) throws -> Double? {
-        try value.doubleValue()
-//        guard !(value.isNull) else { return nil }
-//
-//        if let number = value as? NSNumber, number !== kCFBooleanTrue, number !== kCFBooleanFalse {
-//            // We are always willing to return the number as a Double:
-//            // * If the original value was integral, it is guaranteed to fit in a Double; we are willing to lose precision past 2^53 if you encoded a UInt64 but requested a Double
-//            // * If it was a Float or Double, you will get back the precise value
-//            // * If it was Decimal, you will get back the nearest approximation
-//            return number.doubleValue
-//
-//        /* FIXME: If swift-corelibs-foundation doesn't change to use NSNumber, this code path will need to be included and tested:
-//        } else if let double = value as? Double {
-//            return double
-//        } else if let int = value as? Int {
-//            if let double = Double(exactly: int) {
-//                return double
-//            }
-//
-//            overflow = true
-//        */
-//
-//        } else if let string = value as? String,
-//            case .convertFromString(let posInfString, let negInfString, let nanString) = self.options.nonConformingFloatDecodingStrategy {
-//            if string == posInfString {
-//                return Double.infinity
-//            } else if string == negInfString {
-//                return -Double.infinity
-//            } else if string == nanString {
-//                return Double.nan
-//            }
-//        }
-//
-//        throw DecodingError._typeMismatch(at: self.codingPath, expectation: type, reality: value)
+        guard !(value.isNull) else { return nil }
+
+        if let number = value as? JSONNumber {
+            // We are always willing to return the number as a Double:
+            // * If the original value was integral, it is guaranteed to fit in a Double; we are willing to lose precision past 2^53 if you encoded a UInt64 but requested a Double
+            // * If it was a Float or Double, you will get back the precise value
+            // * If it was Decimal, you will get back the nearest approximation
+            return Double(number.digitString)
+        } else if let jsonString = value as? JSONString,
+            case .convertFromString(let posInfString, let negInfString, let nanString) = self.options.nonConformingFloatDecodingStrategy {
+            if jsonString.string == posInfString {
+                return Double.infinity
+            } else if jsonString.string == negInfString {
+                return -Double.infinity
+            } else if jsonString.string == nanString {
+                return Double.nan
+            }
+        }
+
+        throw DecodingError._typeMismatch(at: self.codingPath, expectation: type, reality: value)
     }
 
     func unbox(_ value: JSONValue, as type: String.Type) throws -> String? {
@@ -2416,16 +2365,14 @@ private extension __JSONDecoder {
     }
 
     func unbox(_ value: JSONValue, as type: Decimal.Type) throws -> Decimal? {
-        try value.decimalValue()
-//        guard !(value is JSONNull) else { return nil }
-//
-//        // Attempt to bridge from NSDecimalNumber.
-//        if let decimal = try? value.decimalValue() {
-//            return decimal
-//        } else {
-//            let doubleValue = try self.unbox(value, as: Double.self)!
-//            return Decimal(doubleValue)
-//        }
+        guard !(value is JSONNull) else { return nil }
+
+        if let decimal = try? value.decimalValue() {
+            return decimal
+        } else {
+            let doubleValue = try self.unbox(value, as: Double.self)!
+            return Decimal(doubleValue)
+        }
     }
 
     func unbox<T>(_ value: JSONValue, as type: _JSONStringDictionaryDecodableMarker.Type) throws -> T? {
