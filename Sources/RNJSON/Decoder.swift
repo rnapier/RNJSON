@@ -1211,7 +1211,7 @@ private class __JSONDecoder : Decoder {
     // MARK: - Decoder Methods
 
     public func container<Key>(keyedBy type: Key.Type) throws -> KeyedDecodingContainer<Key> {
-        guard !(self.storage.topContainer is NSNull) else {
+        guard !(self.storage.topContainer.isNull) else {
             throw DecodingError.valueNotFound(KeyedDecodingContainer<Key>.self,
                                               DecodingError.Context(codingPath: self.codingPath,
                                                                     debugDescription: "Cannot get keyed decoding container -- found null value instead."))
@@ -1226,7 +1226,7 @@ private class __JSONDecoder : Decoder {
     }
 
     public func unkeyedContainer() throws -> UnkeyedDecodingContainer {
-        guard !(self.storage.topContainer is NSNull) else {
+        guard !(self.storage.topContainer.isNull) else {
             throw DecodingError.valueNotFound(UnkeyedDecodingContainer.self,
                                               DecodingError.Context(codingPath: self.codingPath,
                                                                     debugDescription: "Cannot get unkeyed decoding container -- found null value instead."))
@@ -1997,7 +1997,7 @@ extension __JSONDecoder : SingleValueDecodingContainer {
     }
 
     public func decodeNil() -> Bool {
-        return self.storage.topContainer is NSNull
+        return self.storage.topContainer.isNull
     }
 
     public func decode(_ type: Bool.Type) throws -> Bool {
@@ -2081,25 +2081,13 @@ extension __JSONDecoder : SingleValueDecodingContainer {
 private extension __JSONDecoder {
     /// Returns the given value unboxed from a container.
     func unbox(_ value: JSONValue, as type: Bool.Type) throws -> Bool? {
-        try value.boolValue()
-//        guard !(value.isNull) else { return nil }
-//
-//        if let number = value as? NSNumber {
-//            // TODO: Add a flag to coerce non-boolean numbers into Bools?
-//            if number === kCFBooleanTrue as NSNumber {
-//                return true
-//            } else if number === kCFBooleanFalse as NSNumber {
-//                return false
-//            }
-//
-//        /* FIXME: If swift-corelibs-foundation doesn't change to use NSNumber, this code path will need to be included and tested:
-//        } else if let bool = value as? Bool {
-//            return bool
-//        */
-//
-//        }
-//
-//        throw DecodingError._typeMismatch(at: self.codingPath, expectation: type, reality: value)
+        guard !(value.isNull) else { return nil }
+
+        do {
+            return try value.boolValue()
+        } catch {
+            throw DecodingError._typeMismatch(at: self.codingPath, expectation: type, reality: value)
+        }
     }
 
     func unbox(_ value: JSONValue, as type: Int.Type) throws -> Int? {
