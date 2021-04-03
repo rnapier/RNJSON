@@ -78,9 +78,9 @@ final class RNJSONDecoderTests: XCTestCase {
             XCTAssert(error is DecodingError)
             switch error as! DecodingError {
             case .typeMismatch(let type, let context):
-                XCTAssert(type == String.self)
+                XCTAssert(type == Bool.self)
                 XCTAssert(context.codingPath.isEmpty)
-                XCTAssertEqual(context.debugDescription, "Expected to decode Bool.")
+                XCTAssertEqual(context.debugDescription, "Expected to decode Bool but found a string/data instead.")
                 XCTAssertNil(context.underlyingError)
             default: XCTFail()
             }
