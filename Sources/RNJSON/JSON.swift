@@ -60,7 +60,7 @@ public struct JSONString: JSONValue {
     public func stringValue() throws -> String { string }
 
     public init(_ token: JSONTokenString) throws {
-        // FIXME: Validate
+        // FIXME: Validate string
         guard let string = token.contents else { throw JSONError.dataCorrupted }
         self.init(string)
     }

@@ -29,18 +29,14 @@ final class RNJSONDecoderTests: XCTestCase {
     }
 
     func testStringCorrupt() throws {
-        let json = Data([0x22, 0x80, 0x22])
+        let json = Data([0x22, 0x80, 0x22]) // Invalid UTF-8 byte inside quotes.
         XCTAssertThrowsError(try RNJSONDecoder().decode(String.self, from: json)) { error in
             XCTAssert(error is DecodingError)
             switch error as! DecodingError {
             case .dataCorrupted(let context):
                 XCTAssert(context.codingPath.isEmpty)
                 XCTAssertEqual(context.debugDescription, "The given data was not valid JSON.")
-                let uerror = context.underlyingError as NSError?
-                XCTAssertEqual(uerror?.domain, NSCocoaErrorDomain)
-                XCTAssertEqual(uerror?.code, NSPropertyListReadCorruptError)
-                XCTAssertEqual(uerror?.userInfo[NSDebugDescriptionErrorKey] as? String,
-                               "Unable to convert data to string around character 0.")
+                // TODO: Check underlying error to determine where error occurred.
             default: XCTFail()
             }
         }
