@@ -27,7 +27,7 @@ public protocol JSONValue {
 
     var count: Int { get }
     func get(_ index: Int) throws -> JSONValue
-    subscript(_ index: Int) -> JSONValue? { get }
+    subscript(_ index: Int) -> JSONValue { get }
 
     var isNull: Bool { get }
 }
@@ -49,7 +49,7 @@ public extension JSONValue {
 
     var count: Int { 1 }
     func get(_ index: Int) throws -> JSONValue { throw JSONError.typeMismatch }
-    subscript(_ index: Int) -> JSONValue? { nil }
+    subscript(_ index: Int) -> JSONValue { JSONNull() }
 
     var isNull: Bool { false }
 }
@@ -69,6 +69,7 @@ public struct JSONString: JSONValue {
 public struct JSONNumber: JSONValue {
     public var digitString: String
     public init<Number: Numeric>(_ number: Number) { self.digitString = "\(number)" }
+    public init(_ number: NSDecimalNumber) { self.digitString = "\(number)" }
 
     init(_ token: JSONTokenNumber) throws { self.digitString = try String(data: token.data, encoding: .utf8) ?? { throw JSONError.dataCorrupted }() } // FIXME: Validate
 
@@ -141,14 +142,22 @@ public struct JSONArray: JSONValue {
         elements.append(element)
     }
     public var count: Int { elements.count }
-    public func get(_ index: Int) throws -> JSONValue { try self[index] ?? { throw JSONError.missingValue }() }
+    public func get(_ index: Int) throws -> JSONValue {
+        if elements.indices.contains(index) {
+            return elements[index]
+        } else {
+            throw JSONError.missingValue
+        }
+    }
 }
 
 extension JSONArray: Collection {
     public var startIndex: Int { elements.startIndex }
     public var endIndex: Int { elements.endIndex }
     public func index(after i: Int) -> Int { i + 1 }
-    public subscript(position: Int) -> JSONValue { elements[position] }
+    public subscript(position: Int) -> JSONValue {
+        (try? get(position)) ?? JSONNull()
+    }
 }
 
 public struct JSONNull: JSONValue {

@@ -66,9 +66,9 @@ final class RNJSONTests: XCTestCase {
 
         XCTAssert(result is JSONArray)
         XCTAssertEqual(result.count, 3)
-        XCTAssertEqual(try result[0]?.intValue(), 1)
-        XCTAssertEqual(try result[1]?.intValue(), 2)
-        XCTAssertEqual(try result[2]?.intValue(), 3)
+        XCTAssertEqual(try result[0].intValue(), 1)
+        XCTAssertEqual(try result[1].intValue(), 2)
+        XCTAssertEqual(try result[2].intValue(), 3)
     }
 
     func testNullDecode() throws {

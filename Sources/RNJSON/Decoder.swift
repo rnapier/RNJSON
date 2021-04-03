@@ -232,9 +232,8 @@ open class RNJSONEncoder {
                                              EncodingError.Context(codingPath: [], debugDescription: "Top-level \(T.self) did not encode any values."))
         }
 
-        let writingOptions = JSONSerialization.WritingOptions(rawValue: self.outputFormatting.rawValue).union(.fragmentsAllowed)
         do {
-           return try JSONSerialization.data(withJSONObject: topLevel, options: writingOptions)
+           return try JSONWriter().encode(topLevel)
         } catch {
             throw EncodingError.invalidValue(value,
                                              EncodingError.Context(codingPath: [], debugDescription: "Unable to encode the given top-level value to JSON.", underlyingError: error))
@@ -334,7 +333,7 @@ private struct _JSONEncodingStorage {
 
     /// The container stack.
     /// Elements may be any one of the JSON types (NSNull, NSNumber, NSString, NSArray, NSDictionary).
-    private(set) var containers: [NSObject] = []
+    private(set) var containers: [Any] = []
 
     // MARK: - Initialization
 
@@ -359,11 +358,11 @@ private struct _JSONEncodingStorage {
         return array
     }
 
-    mutating func push(container: __owned NSObject) {
+    mutating func push(container: __owned JSONValue) {
         self.containers.append(container)
     }
 
-    mutating func popContainer() -> NSObject {
+    mutating func popContainer() -> Any {
         precondition(!self.containers.isEmpty, "Empty container stack.")
         return self.containers.popLast()!
     }
@@ -615,7 +614,7 @@ extension __JSONEncoder : SingleValueEncodingContainer {
 
     public func encodeNil() throws {
         assertCanEncodeNewValue()
-        self.storage.push(container: NSNull())
+        self.storage.push(container: JSONNull())
     }
 
     public func encode(_ value: Bool) throws {
@@ -698,20 +697,20 @@ extension __JSONEncoder : SingleValueEncodingContainer {
 
 private extension __JSONEncoder {
     /// Returns the given value boxed in a container appropriate for pushing onto the container stack.
-    func box(_ value: Bool)   -> NSObject { return NSNumber(value: value) }
-    func box(_ value: Int)    -> NSObject { return NSNumber(value: value) }
-    func box(_ value: Int8)   -> NSObject { return NSNumber(value: value) }
-    func box(_ value: Int16)  -> NSObject { return NSNumber(value: value) }
-    func box(_ value: Int32)  -> NSObject { return NSNumber(value: value) }
-    func box(_ value: Int64)  -> NSObject { return NSNumber(value: value) }
-    func box(_ value: UInt)   -> NSObject { return NSNumber(value: value) }
-    func box(_ value: UInt8)  -> NSObject { return NSNumber(value: value) }
-    func box(_ value: UInt16) -> NSObject { return NSNumber(value: value) }
-    func box(_ value: UInt32) -> NSObject { return NSNumber(value: value) }
-    func box(_ value: UInt64) -> NSObject { return NSNumber(value: value) }
-    func box(_ value: String) -> NSObject { return NSString(string: value) }
+    func box(_ value: Bool)   -> JSONValue { return JSONBool(value) }
+    func box(_ value: Int)    -> JSONValue { return JSONNumber(value) }
+    func box(_ value: Int8)   -> JSONValue { return JSONNumber(value) }
+    func box(_ value: Int16)  -> JSONValue { return JSONNumber(value) }
+    func box(_ value: Int32)  -> JSONValue { return JSONNumber(value) }
+    func box(_ value: Int64)  -> JSONValue { return JSONNumber(value) }
+    func box(_ value: UInt)   -> JSONValue { return JSONNumber(value) }
+    func box(_ value: UInt8)  -> JSONValue { return JSONNumber(value) }
+    func box(_ value: UInt16) -> JSONValue { return JSONNumber(value) }
+    func box(_ value: UInt32) -> JSONValue { return JSONNumber(value) }
+    func box(_ value: UInt64) -> JSONValue { return JSONNumber(value) }
+    func box(_ value: String) -> JSONValue { return JSONString(value) }
 
-    func box(_ float: Float) throws -> NSObject {
+    func box(_ float: Float) throws -> JSONValue {
         guard !float.isInfinite && !float.isNaN else {
             guard case let .convertToString(positiveInfinity: posInfString,
                                             negativeInfinity: negInfString,
@@ -720,18 +719,18 @@ private extension __JSONEncoder {
             }
 
             if float == Float.infinity {
-                return NSString(string: posInfString)
+                return JSONString(posInfString)
             } else if float == -Float.infinity {
-                return NSString(string: negInfString)
+                return JSONString(negInfString)
             } else {
-                return NSString(string: nanString)
+                return JSONString(nanString)
             }
         }
 
-        return NSNumber(value: float)
+        return JSONNumber(float)
     }
 
-    func box(_ double: Double) throws -> NSObject {
+    func box(_ double: Double) throws -> JSONValue {
         guard !double.isInfinite && !double.isNaN else {
             guard case let .convertToString(positiveInfinity: posInfString,
                                             negativeInfinity: negInfString,
@@ -740,40 +739,40 @@ private extension __JSONEncoder {
             }
 
             if double == Double.infinity {
-                return NSString(string: posInfString)
+                return JSONString(posInfString)
             } else if double == -Double.infinity {
-                return NSString(string: negInfString)
+                return JSONString(negInfString)
             } else {
-                return NSString(string: nanString)
+                return JSONString(nanString)
             }
         }
 
-        return NSNumber(value: double)
+        return JSONNumber(double)
     }
 
-    func box(_ date: Date) throws -> NSObject {
+    func box(_ date: Date) throws -> JSONValue {
         switch self.options.dateEncodingStrategy {
         case .deferredToDate:
             // Must be called with a surrounding with(pushedKey:) call.
             // Dates encode as single-value objects; this can't both throw and push a container, so no need to catch the error.
             try date.encode(to: self)
-            return self.storage.popContainer()
+            return self.storage.popContainer() as! JSONValue
 
         case .secondsSince1970:
-            return NSNumber(value: date.timeIntervalSince1970)
+            return JSONNumber(date.timeIntervalSince1970)
 
         case .millisecondsSince1970:
-            return NSNumber(value: 1000.0 * date.timeIntervalSince1970)
+            return JSONNumber(1000.0 * date.timeIntervalSince1970)
 
         case .iso8601:
             if #available(macOS 10.12, iOS 10.0, watchOS 3.0, tvOS 10.0, *) {
-                return NSString(string: _iso8601Formatter.string(from: date))
+                return JSONString(_iso8601Formatter.string(from: date))
             } else {
                 fatalError("ISO8601DateFormatter is unavailable on this platform.")
             }
 
         case .formatted(let formatter):
-            return NSString(string: formatter.string(from: date))
+            return JSONString(formatter.string(from: date))
 
         case .custom(let closure):
             let depth = self.storage.count
@@ -790,15 +789,15 @@ private extension __JSONEncoder {
 
             guard self.storage.count > depth else {
                 // The closure didn't encode anything. Return the default keyed container.
-                return NSDictionary()
+                return JSONObject()
             }
 
             // We can pop because the closure encoded something.
-            return self.storage.popContainer()
+            return self.storage.popContainer() as! JSONValue
         }
     }
 
-    func box(_ data: Data) throws -> NSObject {
+    func box(_ data: Data) throws -> JSONValue {
         switch self.options.dataEncodingStrategy {
         case .deferredToData:
             // Must be called with a surrounding with(pushedKey:) call.
@@ -815,10 +814,10 @@ private extension __JSONEncoder {
                 throw error
             }
 
-            return self.storage.popContainer()
+            return self.storage.popContainer() as! JSONValue
 
         case .base64:
-            return NSString(string: data.base64EncodedString())
+            return JSONString(data.base64EncodedString())
 
         case .custom(let closure):
             let depth = self.storage.count
@@ -835,15 +834,15 @@ private extension __JSONEncoder {
 
             guard self.storage.count > depth else {
                 // The closure didn't encode anything. Return the default keyed container.
-                return NSDictionary()
+                return JSONObject()
             }
 
             // We can pop because the closure encoded something.
-            return self.storage.popContainer()
+            return self.storage.popContainer() as! JSONValue
         }
     }
 
-    func box(_ dict: [String : Encodable]) throws -> NSObject? {
+    func box(_ dict: [String : Encodable]) throws -> JSONValue? {
         let depth = self.storage.count
         let result = self.storage.pushKeyedContainer()
         do {
@@ -866,15 +865,15 @@ private extension __JSONEncoder {
             return nil
         }
 
-        return self.storage.popContainer()
+        return self.storage.popContainer() as? JSONValue
     }
 
-    func box(_ value: Encodable) throws -> NSObject {
-        return try self.box_(value) ?? NSDictionary()
+    func box(_ value: Encodable) throws -> JSONValue {
+        return try self.box_(value) ?? JSONObject()
     }
 
     // This method is called "box_" instead of "box" to disambiguate it from the overloads. Because the return type here is different from all of the "box" overloads (and is more general), any "box" calls in here would call back into "box" recursively instead of calling the appropriate overload, which is not what we want.
-    func box_(_ value: Encodable) throws -> NSObject? {
+    func box_(_ value: Encodable) throws -> JSONValue? {
         // Disambiguation between variable and function is required due to
         // issue tracked at: https://bugs.swift.org/browse/SR-1846
         let type = Swift.type(of: value)
@@ -889,7 +888,7 @@ private extension __JSONEncoder {
             return self.box((value as! URL).absoluteString)
         } else if type == Decimal.self || type == NSDecimalNumber.self {
             // JSONSerialization can natively handle NSDecimalNumber.
-            return (value as! NSDecimalNumber)
+            return JSONNumber(value as! NSDecimalNumber)
         } else if value is _JSONStringDictionaryEncodableMarker {
             return try self.box(value as! [String : Encodable])
         }
@@ -912,7 +911,7 @@ private extension __JSONEncoder {
             return nil
         }
 
-        return self.storage.popContainer()
+        return self.storage.popContainer() as? JSONValue
     }
 }
 
@@ -1672,7 +1671,7 @@ private struct _JSONUnkeyedDecodingContainer : UnkeyedDecodingContainer {
             throw DecodingError.valueNotFound(JSONValue?.self, DecodingError.Context(codingPath: self.decoder.codingPath + [_JSONKey(index: self.currentIndex)], debugDescription: "Unkeyed container is at end."))
         }
 
-        if self.container[self.currentIndex]?.isNull == true {
+        if self.container[self.currentIndex].isNull {
             self.currentIndex += 1
             return true
         } else {
