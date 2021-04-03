@@ -68,7 +68,7 @@ public struct JSONString: JSONValue {
 
 public struct JSONNumber: JSONValue {
     public var digitString: String
-    public init<Number: FixedWidthInteger>(_ number: Number) { self.digitString = "\(number)" }
+    public init<Number: Numeric>(_ number: Number) { self.digitString = "\(number)" }
 
     init(_ token: JSONTokenNumber) throws { self.digitString = try String(data: token.data, encoding: .utf8) ?? { throw JSONError.dataCorrupted }() } // FIXME: Validate
 
@@ -97,7 +97,23 @@ public struct JSONObject: JSONValue {
     public var count: Int { keyValues.count }
     public func get(_ key: String) throws -> JSONValue { try self[key] ?? { throw JSONError.missingValue }() }
     public func getAll(_ key: String) -> [JSONValue] { keyValues.filter({ $0.key == key }).map(\.value) }
-    public subscript(_ key: String) -> JSONValue? { keyValues.first(where: { $0.key == key })?.value }
+
+    public subscript(_ key: String) -> JSONValue? {
+        get { keyValues.first(where: { $0.key == key })?.value }
+        set {
+            if let value = newValue {
+                if let index = keyValues.firstIndex(where: { $0.key == key}) {
+                    keyValues[index] = (key: key, value: value)
+                } else {
+                    keyValues.append((key: key, value: value))
+                }
+            } else {
+                if let index = keyValues.firstIndex(where: { $0.key == key }) {
+                    keyValues.remove(at: index)
+                }
+            }
+        }
+    }
 
     public var keys: [String] { keyValues.map(\.key) }
 }
@@ -111,8 +127,11 @@ extension JSONObject: Collection {
     }
     public var startIndex: ObjectIndex { ObjectIndex(value: keyValues.startIndex) }
     public var endIndex: ObjectIndex { ObjectIndex(value: keyValues.endIndex) }
-    public subscript(position: ObjectIndex) -> (key: String, value: JSONValue) { keyValues[position.value] }
     public func index(after i: ObjectIndex) -> ObjectIndex { ObjectIndex(value: keyValues.index(after: i.value)) }
+    public subscript(position: ObjectIndex) -> (key: String, value: JSONValue) {
+        get { keyValues[position.value] }
+        set { keyValues[position.value] = newValue }
+    }
 }
 
 public struct JSONArray: JSONValue {

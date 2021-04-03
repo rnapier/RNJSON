@@ -6,7 +6,7 @@
 //
 
 import XCTest
-@testable import RNJSON
+import RNJSON
 
 final class RNJSONDecoderTests: XCTestCase {
 
