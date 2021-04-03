@@ -11,15 +11,6 @@ public enum JSONError: Swift.Error {
     case missingValue
 }
 
-public struct JSONMetadataKey: Hashable, RawRepresentable {
-    static let leadingWhitespace  = JSONMetadataKey("RNJSON.leadingWhitespace")
-    static let trailingWhitespace = JSONMetadataKey("RNJSON.trailingWhitespace")
-
-    public let rawValue: String
-    public init(_ rawValue: String) { self.init(rawValue: rawValue )}
-    public init(rawValue: String) { self.rawValue = rawValue }
-}
-
 public protocol JSONValue {
     func stringValue() throws -> String
 
@@ -68,8 +59,6 @@ public struct JSONString: JSONValue {
     public init(_ string: String) { self.string = string }
     public func stringValue() throws -> String { string }
 
-    public var metadata: [JSONMetadataKey: Any] = [:]
-
     public init(_ token: JSONTokenString) throws {
         // FIXME: Validate
         guard let string = token.contents else { throw JSONError.dataCorrupted }
@@ -80,8 +69,6 @@ public struct JSONString: JSONValue {
 public struct JSONNumber: JSONValue {
     public var digitString: String
     public init<Number: FixedWidthInteger>(_ number: Number) { self.digitString = "\(number)" }
-
-    public var metadata: [JSONMetadataKey: Any] = [:]
 
     init(_ token: JSONTokenNumber) throws { self.digitString = try String(data: token.data, encoding: .utf8) ?? { throw JSONError.dataCorrupted }() } // FIXME: Validate
 
@@ -96,28 +83,40 @@ public struct JSONNumber: JSONValue {
 
 public struct JSONBool: JSONValue {
     public var value: Bool
-    public var metadata: [JSONMetadataKey: Any] = [:]
     public init(_ value: Bool) { self.value = value }
     public func boolValue() throws -> Bool { value }
 }
 
 public struct JSONObject: JSONValue {
-    public var keyValues: [(key: JSONString, value: JSONValue)]
-    public var metadata: [JSONMetadataKey: Any] = [:]
-    public init() { self.keyValues = [] }
-    public mutating func add(value: JSONValue, for key: JSONString) {
+    public var keyValues: [(key: String, value: JSONValue)]
+    public init(_ keyValues: [(key: String, value: JSONValue)] = []) { self.keyValues = keyValues }
+    public mutating func add(value: JSONValue, for key: String) {
         keyValues.append((key: key, value: value))
     }
 
     public var count: Int { keyValues.count }
     public func get(_ key: String) throws -> JSONValue { try self[key] ?? { throw JSONError.missingValue }() }
-    public func getAll(_ key: String) -> [JSONValue] { keyValues.filter({ $0.key.string == key }).map(\.value) }
-    public subscript(_ key: String) -> JSONValue? { keyValues.first(where: { $0.key.string == key })?.value }
+    public func getAll(_ key: String) -> [JSONValue] { keyValues.filter({ $0.key == key }).map(\.value) }
+    public subscript(_ key: String) -> JSONValue? { keyValues.first(where: { $0.key == key })?.value }
+
+    public var keys: [String] { keyValues.map(\.key) }
+}
+
+extension JSONObject: Collection {
+    public struct ObjectIndex: Comparable {
+        public static func < (lhs: JSONObject.ObjectIndex, rhs: JSONObject.ObjectIndex) -> Bool {
+            lhs.value < rhs.value
+        }
+        fileprivate let value: Int
+    }
+    public var startIndex: ObjectIndex { ObjectIndex(value: keyValues.startIndex) }
+    public var endIndex: ObjectIndex { ObjectIndex(value: keyValues.endIndex) }
+    public subscript(position: ObjectIndex) -> (key: String, value: JSONValue) { keyValues[position.value] }
+    public func index(after i: ObjectIndex) -> ObjectIndex { ObjectIndex(value: keyValues.index(after: i.value)) }
 }
 
 public struct JSONArray: JSONValue {
     public var elements: [JSONValue]
-    public var metadata: [JSONMetadataKey: Any] = [:]
     public init(_ elements: [JSONValue] = []) { self.elements = elements }
     public mutating func append(_ element: JSONValue) {
         elements.append(element)
@@ -128,6 +127,5 @@ public struct JSONArray: JSONValue {
 }
 
 public struct JSONNull: JSONValue {
-    public var metadata: [JSONMetadataKey: Any] = [:]
     public var isNull: Bool { true }
 }

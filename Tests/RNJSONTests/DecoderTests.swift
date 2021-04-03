@@ -127,23 +127,21 @@ final class RNJSONDecoderTests: XCTestCase {
         XCTAssertEqual(result, [1, 1])
     }
 
+    func testDecimal() throws {
+        let json = Data("""
+            123
+            """.utf8)
 
+        let result = try RNJSONDecoder().decode(Decimal.self, from: json)
+        XCTAssertEqual(result, Decimal(123))
 
-//    func testDecimal() throws {
-//        let json = Data("""
-//            123
-//            """.utf8)
-//
-//        let result = try RNJSONDecoder().decode(Decimal.self, from: json)
-//        XCTAssertEqual(result, Decimal(123))
-//
-//    }
+    }
 
 //    func testComplexJSON() throws {
 //        let url = Bundle.module.url(forResource: "json.org/pass1.json", withExtension: nil)!
 //        let json = try Data(contentsOf: url)
 //
-//        let result = try RNJSONDecoder().decode(RNJSON.self, from: json)
+//        let result = try RNJSONDecoder().decode(JSONValue.self, from: json)
 //        XCTAssert(result.isArray)
 //    }
 }

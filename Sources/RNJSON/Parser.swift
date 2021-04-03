@@ -16,7 +16,7 @@ public class JSONParser {
         return value
     }
 
-    func parseValue<Tokens>(for tokens: inout Tokens) throws -> JSONValue where Tokens: Collection, Tokens.Element == JSONToken, Tokens.SubSequence == Tokens {
+    private func parseValue<Tokens>(for tokens: inout Tokens) throws -> JSONValue where Tokens: Collection, Tokens.Element == JSONToken, Tokens.SubSequence == Tokens {
         let token = try tokens.requireToken()
 
         switch token {
@@ -74,7 +74,7 @@ public class JSONParser {
                                                 found: separator)
             }
 
-            object.add(value: try parseValue(for: &tokens), for: key)
+            object.add(value: try parseValue(for: &tokens), for: key.string)
 
             token = try tokens.requireToken()
 

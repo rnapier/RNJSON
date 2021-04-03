@@ -34,14 +34,8 @@ public class JSONWriter {
     }
 
     private func encode(object: JSONObject) throws -> Data {
-
-        var content = Data()
-
-        for (key, value) in object.keyValues {
-            content += try encode(key)
-        }
-
         fatalError()
+
 
     }
 
