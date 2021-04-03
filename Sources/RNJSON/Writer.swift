@@ -10,10 +10,7 @@ import Foundation
 public class JSONWriter {
     public init() {}
 
-    func encode<T>(_ value: T, codingPath: [CodingKey] = []) throws -> Data where T : JSONValue {
-//        let leadingWhitespace = value.metadata[.leadingWhitespace] as? Data ?? Data()
-//        let trailingWhitespace = value.metadata[.trailingWhitespace] as? Data ?? Data()
-
+    public func encode(_ value: JSONValue) throws -> Data {
         let content: Data
 
         switch value {
@@ -26,7 +23,6 @@ public class JSONWriter {
         default: throw JSONError.unknownValue(value)
         }
         return content
-//        return leadingWhitespace + content + trailingWhitespace
     }
 
     private func encode(string: String) -> Data {
@@ -34,12 +30,14 @@ public class JSONWriter {
     }
 
     private func encode(object: JSONObject) throws -> Data {
-        fatalError()
-
-
+        let keyValues = try object.map { (key, value) in try Data("\"\(key)\":".utf8) + encode(value) }
+        let body = Data(keyValues.joined(separator: ",".utf8))
+        return Data("{".utf8) + body + Data("}".utf8)
     }
 
     private func encode(array: JSONArray) throws -> Data {
-        fatalError()
+        let values = try array.map { (value) in try encode(value) }
+        let body = Data(values.joined(separator: ",".utf8))
+        return Data("[".utf8) + body + Data("]".utf8)
     }
 }

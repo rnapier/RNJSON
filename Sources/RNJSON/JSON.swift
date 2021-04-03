@@ -142,7 +142,13 @@ public struct JSONArray: JSONValue {
     }
     public var count: Int { elements.count }
     public func get(_ index: Int) throws -> JSONValue { try self[index] ?? { throw JSONError.missingValue }() }
-    public subscript(_ index: Int) -> JSONValue? { elements.indices.contains(index) ? elements[index] : nil }
+}
+
+extension JSONArray: Collection {
+    public var startIndex: Int { elements.startIndex }
+    public var endIndex: Int { elements.endIndex }
+    public func index(after i: Int) -> Int { i + 1 }
+    public subscript(position: Int) -> JSONValue { elements[position] }
 }
 
 public struct JSONNull: JSONValue {

@@ -1688,7 +1688,7 @@ private struct _JSONUnkeyedDecodingContainer : UnkeyedDecodingContainer {
         self.decoder.codingPath.append(_JSONKey(index: self.currentIndex))
         defer { self.decoder.codingPath.removeLast() }
 
-        guard let decoded = try self.decoder.unbox(self.container[self.currentIndex] ?? JSONNull(), as: Bool.self) else {
+        guard let decoded = try self.decoder.unbox(self.container[self.currentIndex], as: Bool.self) else {
             throw DecodingError.valueNotFound(type, DecodingError.Context(codingPath: self.decoder.codingPath + [_JSONKey(index: self.currentIndex)], debugDescription: "Expected \(type) but found null instead."))
         }
 
@@ -1704,7 +1704,7 @@ private struct _JSONUnkeyedDecodingContainer : UnkeyedDecodingContainer {
         self.decoder.codingPath.append(_JSONKey(index: self.currentIndex))
         defer { self.decoder.codingPath.removeLast() }
 
-        guard let decoded = try self.decoder.unbox(self.container[self.currentIndex] ?? JSONNull(), as: Int.self) else {
+        guard let decoded = try self.decoder.unbox(self.container[self.currentIndex], as: Int.self) else {
             throw DecodingError.valueNotFound(type, DecodingError.Context(codingPath: self.decoder.codingPath + [_JSONKey(index: self.currentIndex)], debugDescription: "Expected \(type) but found null instead."))
         }
 
@@ -1720,7 +1720,7 @@ private struct _JSONUnkeyedDecodingContainer : UnkeyedDecodingContainer {
         self.decoder.codingPath.append(_JSONKey(index: self.currentIndex))
         defer { self.decoder.codingPath.removeLast() }
 
-        guard let decoded = try self.decoder.unbox(self.container[self.currentIndex] ?? JSONNull(), as: Int8.self) else {
+        guard let decoded = try self.decoder.unbox(self.container[self.currentIndex], as: Int8.self) else {
             throw DecodingError.valueNotFound(type, DecodingError.Context(codingPath: self.decoder.codingPath + [_JSONKey(index: self.currentIndex)], debugDescription: "Expected \(type) but found null instead."))
         }
 
@@ -1736,7 +1736,7 @@ private struct _JSONUnkeyedDecodingContainer : UnkeyedDecodingContainer {
         self.decoder.codingPath.append(_JSONKey(index: self.currentIndex))
         defer { self.decoder.codingPath.removeLast() }
 
-        guard let decoded = try self.decoder.unbox(self.container[self.currentIndex] ?? JSONNull(), as: Int16.self) else {
+        guard let decoded = try self.decoder.unbox(self.container[self.currentIndex], as: Int16.self) else {
             throw DecodingError.valueNotFound(type, DecodingError.Context(codingPath: self.decoder.codingPath + [_JSONKey(index: self.currentIndex)], debugDescription: "Expected \(type) but found null instead."))
         }
 
@@ -1752,7 +1752,7 @@ private struct _JSONUnkeyedDecodingContainer : UnkeyedDecodingContainer {
         self.decoder.codingPath.append(_JSONKey(index: self.currentIndex))
         defer { self.decoder.codingPath.removeLast() }
 
-        guard let decoded = try self.decoder.unbox(self.container[self.currentIndex] ?? JSONNull(), as: Int32.self) else {
+        guard let decoded = try self.decoder.unbox(self.container[self.currentIndex], as: Int32.self) else {
             throw DecodingError.valueNotFound(type, DecodingError.Context(codingPath: self.decoder.codingPath + [_JSONKey(index: self.currentIndex)], debugDescription: "Expected \(type) but found null instead."))
         }
 
@@ -1768,7 +1768,7 @@ private struct _JSONUnkeyedDecodingContainer : UnkeyedDecodingContainer {
         self.decoder.codingPath.append(_JSONKey(index: self.currentIndex))
         defer { self.decoder.codingPath.removeLast() }
 
-        guard let decoded = try self.decoder.unbox(self.container[self.currentIndex] ?? JSONNull(), as: Int64.self) else {
+        guard let decoded = try self.decoder.unbox(self.container[self.currentIndex], as: Int64.self) else {
             throw DecodingError.valueNotFound(type, DecodingError.Context(codingPath: self.decoder.codingPath + [_JSONKey(index: self.currentIndex)], debugDescription: "Expected \(type) but found null instead."))
         }
 
@@ -1784,7 +1784,7 @@ private struct _JSONUnkeyedDecodingContainer : UnkeyedDecodingContainer {
         self.decoder.codingPath.append(_JSONKey(index: self.currentIndex))
         defer { self.decoder.codingPath.removeLast() }
 
-        guard let decoded = try self.decoder.unbox(self.container[self.currentIndex] ?? JSONNull(), as: UInt.self) else {
+        guard let decoded = try self.decoder.unbox(self.container[self.currentIndex], as: UInt.self) else {
             throw DecodingError.valueNotFound(type, DecodingError.Context(codingPath: self.decoder.codingPath + [_JSONKey(index: self.currentIndex)], debugDescription: "Expected \(type) but found null instead."))
         }
 
@@ -1800,7 +1800,7 @@ private struct _JSONUnkeyedDecodingContainer : UnkeyedDecodingContainer {
         self.decoder.codingPath.append(_JSONKey(index: self.currentIndex))
         defer { self.decoder.codingPath.removeLast() }
 
-        guard let decoded = try self.decoder.unbox(self.container[self.currentIndex] ?? JSONNull(), as: UInt8.self) else {
+        guard let decoded = try self.decoder.unbox(self.container[self.currentIndex], as: UInt8.self) else {
             throw DecodingError.valueNotFound(type, DecodingError.Context(codingPath: self.decoder.codingPath + [_JSONKey(index: self.currentIndex)], debugDescription: "Expected \(type) but found null instead."))
         }
 
@@ -1816,7 +1816,7 @@ private struct _JSONUnkeyedDecodingContainer : UnkeyedDecodingContainer {
         self.decoder.codingPath.append(_JSONKey(index: self.currentIndex))
         defer { self.decoder.codingPath.removeLast() }
 
-        guard let decoded = try self.decoder.unbox(self.container[self.currentIndex] ?? JSONNull(), as: UInt16.self) else {
+        guard let decoded = try self.decoder.unbox(self.container[self.currentIndex], as: UInt16.self) else {
             throw DecodingError.valueNotFound(type, DecodingError.Context(codingPath: self.decoder.codingPath + [_JSONKey(index: self.currentIndex)], debugDescription: "Expected \(type) but found null instead."))
         }
 
@@ -1832,7 +1832,7 @@ private struct _JSONUnkeyedDecodingContainer : UnkeyedDecodingContainer {
         self.decoder.codingPath.append(_JSONKey(index: self.currentIndex))
         defer { self.decoder.codingPath.removeLast() }
 
-        guard let decoded = try self.decoder.unbox(self.container[self.currentIndex] ?? JSONNull(), as: UInt32.self) else {
+        guard let decoded = try self.decoder.unbox(self.container[self.currentIndex], as: UInt32.self) else {
             throw DecodingError.valueNotFound(type, DecodingError.Context(codingPath: self.decoder.codingPath + [_JSONKey(index: self.currentIndex)], debugDescription: "Expected \(type) but found null instead."))
         }
 
@@ -1848,7 +1848,7 @@ private struct _JSONUnkeyedDecodingContainer : UnkeyedDecodingContainer {
         self.decoder.codingPath.append(_JSONKey(index: self.currentIndex))
         defer { self.decoder.codingPath.removeLast() }
 
-        guard let decoded = try self.decoder.unbox(self.container[self.currentIndex] ?? JSONNull(), as: UInt64.self) else {
+        guard let decoded = try self.decoder.unbox(self.container[self.currentIndex], as: UInt64.self) else {
             throw DecodingError.valueNotFound(type, DecodingError.Context(codingPath: self.decoder.codingPath + [_JSONKey(index: self.currentIndex)], debugDescription: "Expected \(type) but found null instead."))
         }
 
@@ -1864,7 +1864,7 @@ private struct _JSONUnkeyedDecodingContainer : UnkeyedDecodingContainer {
         self.decoder.codingPath.append(_JSONKey(index: self.currentIndex))
         defer { self.decoder.codingPath.removeLast() }
 
-        guard let decoded = try self.decoder.unbox(self.container[self.currentIndex] ?? JSONNull(), as: Float.self) else {
+        guard let decoded = try self.decoder.unbox(self.container[self.currentIndex], as: Float.self) else {
             throw DecodingError.valueNotFound(type, DecodingError.Context(codingPath: self.decoder.codingPath + [_JSONKey(index: self.currentIndex)], debugDescription: "Expected \(type) but found null instead."))
         }
 
@@ -1880,7 +1880,7 @@ private struct _JSONUnkeyedDecodingContainer : UnkeyedDecodingContainer {
         self.decoder.codingPath.append(_JSONKey(index: self.currentIndex))
         defer { self.decoder.codingPath.removeLast() }
 
-        guard let decoded = try self.decoder.unbox(self.container[self.currentIndex] ?? JSONNull(), as: Double.self) else {
+        guard let decoded = try self.decoder.unbox(self.container[self.currentIndex], as: Double.self) else {
             throw DecodingError.valueNotFound(type, DecodingError.Context(codingPath: self.decoder.codingPath + [_JSONKey(index: self.currentIndex)], debugDescription: "Expected \(type) but found null instead."))
         }
 
@@ -1896,7 +1896,7 @@ private struct _JSONUnkeyedDecodingContainer : UnkeyedDecodingContainer {
         self.decoder.codingPath.append(_JSONKey(index: self.currentIndex))
         defer { self.decoder.codingPath.removeLast() }
 
-        guard let decoded = try self.decoder.unbox(self.container[self.currentIndex] ?? JSONNull(), as: String.self) else {
+        guard let decoded = try self.decoder.unbox(self.container[self.currentIndex], as: String.self) else {
             throw DecodingError.valueNotFound(type, DecodingError.Context(codingPath: self.decoder.codingPath + [_JSONKey(index: self.currentIndex)], debugDescription: "Expected \(type) but found null instead."))
         }
 
@@ -1912,7 +1912,7 @@ private struct _JSONUnkeyedDecodingContainer : UnkeyedDecodingContainer {
         self.decoder.codingPath.append(_JSONKey(index: self.currentIndex))
         defer { self.decoder.codingPath.removeLast() }
 
-        guard let decoded = try self.decoder.unbox(self.container[self.currentIndex] ?? JSONNull(), as: type) else {
+        guard let decoded = try self.decoder.unbox(self.container[self.currentIndex], as: type) else {
             throw DecodingError.valueNotFound(type, DecodingError.Context(codingPath: self.decoder.codingPath + [_JSONKey(index: self.currentIndex)], debugDescription: "Expected \(type) but found null instead."))
         }
 
@@ -1930,7 +1930,7 @@ private struct _JSONUnkeyedDecodingContainer : UnkeyedDecodingContainer {
                                                                     debugDescription: "Cannot get nested keyed container -- unkeyed container is at end."))
         }
 
-        let value = self.container[self.currentIndex] ?? JSONNull()
+        let value = self.container[self.currentIndex]
         guard !(value.isNull) else {
             throw DecodingError.valueNotFound(KeyedDecodingContainer<NestedKey>.self,
                                               DecodingError.Context(codingPath: self.codingPath,
@@ -1956,7 +1956,7 @@ private struct _JSONUnkeyedDecodingContainer : UnkeyedDecodingContainer {
                                                                     debugDescription: "Cannot get nested keyed container -- unkeyed container is at end."))
         }
 
-        let value = self.container[self.currentIndex] ?? JSONNull()
+        let value = self.container[self.currentIndex]
         guard !(value.isNull) else {
             throw DecodingError.valueNotFound(UnkeyedDecodingContainer.self,
                                               DecodingError.Context(codingPath: self.codingPath,
@@ -1981,7 +1981,7 @@ private struct _JSONUnkeyedDecodingContainer : UnkeyedDecodingContainer {
                                                                     debugDescription: "Cannot get superDecoder() -- unkeyed container is at end."))
         }
 
-        let value = self.container[self.currentIndex] ?? JSONNull()
+        let value = self.container[self.currentIndex]
         self.currentIndex += 1
         return __JSONDecoder(referencing: value, at: self.decoder.codingPath, options: self.decoder.options)
     }

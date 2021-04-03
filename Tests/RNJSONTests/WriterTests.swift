@@ -13,6 +13,9 @@ final class WriterTests: XCTestCase {
     func testString() throws {
         let writer = JSONWriter()
 
+        let json = try writer.encode(JSONString("TestData"))
+
+        XCTAssertEqual(json, Data("\"TestData\"".utf8))
     }
 
 }
