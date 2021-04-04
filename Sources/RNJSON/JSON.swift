@@ -174,7 +174,7 @@ extension JSONObject: Collection {
 public struct JSONArray: JSONValue {
     public var elements: [JSONValue]
     public init(_ elements: [JSONValue] = []) { self.elements = elements }
-    public init(_ array: NSArray) throws { self.init(try array.map(makeJSON)) }
+    public init(_ array: NSArray) throws { self.init(try array.map { try $0 as? JSONValue ?? makeJSON(fromAny: $0) } ) }
     public mutating func append(_ element: JSONValue) {
         elements.append(element)
     }
