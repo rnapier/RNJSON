@@ -30,7 +30,7 @@ public class JSONWriter {
 
     private func encode(_ value: JSONValue, depth: Int) throws -> String {
         switch value {
-        case let string as JSONString: return "\"\(string.string)\""
+        case let string as JSONString: return escaped("\"\(string.string)\"")
         case let number as JSONNumber: return number.digitString
         case let bool as JSONBool: return bool.value ? "true" : "false"
         case let object as JSONObject: return try encode(object: object, depth: depth)
@@ -68,5 +68,9 @@ public class JSONWriter {
         let values = try array.map { (value) in try encode(value) }
         let body = values.joined(separator: ",")
         return "[\(body)]"
+    }
+
+    private func escaped(_ string: String) -> String {
+        return options.contains(.withoutEscapingSlashes) ? string : string.replacingOccurrences(of: "/", with: "\\/")
     }
 }

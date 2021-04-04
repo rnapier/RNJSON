@@ -76,7 +76,16 @@ public struct JSONString: JSONValue {
 
     public init(_ token: JSONTokenString) throws {
         // FIXME: Validate string
-        guard let string = token.contents else { throw JSONError.dataCorrupted }
+        guard let string = token.contents?
+                .replacingOccurrences(of: "\\\\", with: "\\")
+                .replacingOccurrences(of: "\\\"", with: "\"")
+                .replacingOccurrences(of: "\\/", with: "/")
+                .replacingOccurrences(of: "\\b", with: "\u{8}")
+                .replacingOccurrences(of: "\\f", with: "\u{c}")
+                .replacingOccurrences(of: "\\n", with: "\n")
+                .replacingOccurrences(of: "\\r", with: "\r")
+                .replacingOccurrences(of: "\\t", with: "\t")
+        else { throw JSONError.dataCorrupted }
         self.init(string)
     }
 }
