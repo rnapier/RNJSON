@@ -84,8 +84,14 @@ public struct JSONString: JSONValue {
 public struct JSONNumber: JSONValue {
     private static let formatter = NumberFormatter()
     public var digitString: String
-    public init<Number: Numeric>(_ number: Number) { self.digitString = Self.formatter.string(for: number)! }
+    public init(digitString: String) { self.digitString = digitString }
+    public init<Number: BinaryInteger>(_ number: Number) { self.digitString = Self.formatter.string(for: number)! }
+    public init<Number: BinaryFloatingPoint>(_ number: Number) { self.digitString = Self.formatter.string(for: number)! }
     public init(_ number: NSNumber)  { self.digitString = Self.formatter.string(from: number)! }
+    public init(_ decimal: Decimal)  {
+        var decimal = decimal
+        self.digitString = NSDecimalString(&decimal, nil)
+    }
 
     init(_ token: JSONTokenNumber) throws { self.digitString = try String(data: token.data, encoding: .utf8) ?? { throw JSONError.dataCorrupted }() } // FIXME: Validate
 

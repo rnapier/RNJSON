@@ -922,8 +922,7 @@ private extension __JSONEncoder {
             // Encode URLs as single strings.
             return self.box((value as! URL).absoluteString)
         } else if type == Decimal.self || type == NSDecimalNumber.self {
-            // JSONSerialization can natively handle NSDecimalNumber.
-            return JSONNumber(value as! NSDecimalNumber)
+            return JSONNumber(value as! Decimal)
         } else if value is _JSONStringDictionaryEncodableMarker {
             return try self.box(value as! [String : Encodable])
         }
