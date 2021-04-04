@@ -16,7 +16,7 @@ public class JSONWriter {
         switch value {
         case let string as JSONString: content = encode(string: string.string)
         case let number as JSONNumber: content = Data(number.digitString.utf8)
-        case let bool as JSONBool: content = encode(string: bool.value ? "true": "false")
+        case let bool as JSONBool: content = encode(bool: bool.value)
         case let object as JSONObject: content = try encode(object: object)
         case let array as JSONArray: content = try encode(array: array)
         case is JSONNull: content = encode(string: "null")
@@ -27,6 +27,10 @@ public class JSONWriter {
 
     private func encode(string: String) -> Data {
         Data("\"\(string)\"".utf8)
+    }
+
+    private func encode(bool: Bool) -> Data {
+        Data((bool ? "true" : "false").utf8)
     }
 
     private func encode(object: JSONObject) throws -> Data {
