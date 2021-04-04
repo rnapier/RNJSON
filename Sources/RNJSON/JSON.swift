@@ -85,6 +85,7 @@ public struct JSONString: JSONValue {
                 .replacingOccurrences(of: "\\n", with: "\n")
                 .replacingOccurrences(of: "\\r", with: "\r")
                 .replacingOccurrences(of: "\\t", with: "\t")
+        // TODO: Support \u syntax
         else { throw JSONError.dataCorrupted }
         self.init(string)
     }

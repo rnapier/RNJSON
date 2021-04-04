@@ -890,60 +890,61 @@ class TestJSONEncoder : TestJSONEncoderSuper {
     expectEqual("{\"foo_bar\":\"test\",\"this_is_camel_case_too\":\"test2\"}", encodingResultString)
   }
 
-  func testKeyStrategyDuplicateKeys() {
-    // This test is mostly to make sure we don't assert on duplicate keys
-    struct DecodeMe5 : Codable {
-        var oneTwo : String
-        var numberOfKeys : Int
-
-        enum CodingKeys : String, CodingKey {
-          case oneTwo
-          case oneTwoThree
-        }
-
-        init() {
-            oneTwo = "test"
-            numberOfKeys = 0
-        }
-
-        init(from decoder: Decoder) throws {
-          let container = try decoder.container(keyedBy: CodingKeys.self)
-          oneTwo = try container.decode(String.self, forKey: .oneTwo)
-          numberOfKeys = container.allKeys.count
-        }
-
-        func encode(to encoder: Encoder) throws {
-          var container = encoder.container(keyedBy: CodingKeys.self)
-          try container.encode(oneTwo, forKey: .oneTwo)
-          try container.encode("test2", forKey: .oneTwoThree)
-        }
-    }
-
-    let customKeyConversion = { (_ path: [CodingKey]) -> CodingKey in
-      // All keys are the same!
-      return _TestKey(stringValue: "oneTwo")!
-    }
-
-    // Decoding
-    // This input has a dictionary with two keys, but only one will end up in the container
-    let input = "{\"unused key 1\":\"test1\",\"unused key 2\":\"test2\"}".data(using: .utf8)!
-    let decoder = JSONDecoder()
-    decoder.keyDecodingStrategy = .custom(customKeyConversion)
-
-    let decodingResult = try! decoder.decode(DecodeMe5.self, from: input)
-    // There will be only one result for oneTwo (the second one in the json)
-    expectEqual(1, decodingResult.numberOfKeys)
-
-    // Encoding
-    let encoded = DecodeMe5()
-    let encoder = JSONEncoder()
-    encoder.keyEncodingStrategy = .custom(customKeyConversion)
-    let decodingResultData = try! encoder.encode(encoded)
-    let decodingResultString = String(bytes: decodingResultData, encoding: .utf8)
-
-    // There will be only one value in the result (the second one encoded)
-    expectEqual("{\"oneTwo\":\"test2\"}", decodingResultString)
-  }
+    // RNJSON supports duplicate keys
+//  func testKeyStrategyDuplicateKeys() {
+//    // This test is mostly to make sure we don't assert on duplicate keys
+//    struct DecodeMe5 : Codable {
+//        var oneTwo : String
+//        var numberOfKeys : Int
+//
+//        enum CodingKeys : String, CodingKey {
+//          case oneTwo
+//          case oneTwoThree
+//        }
+//
+//        init() {
+//            oneTwo = "test"
+//            numberOfKeys = 0
+//        }
+//
+//        init(from decoder: Decoder) throws {
+//          let container = try decoder.container(keyedBy: CodingKeys.self)
+//          oneTwo = try container.decode(String.self, forKey: .oneTwo)
+//          numberOfKeys = container.allKeys.count
+//        }
+//
+//        func encode(to encoder: Encoder) throws {
+//          var container = encoder.container(keyedBy: CodingKeys.self)
+//          try container.encode(oneTwo, forKey: .oneTwo)
+//          try container.encode("test2", forKey: .oneTwoThree)
+//        }
+//    }
+//
+//    let customKeyConversion = { (_ path: [CodingKey]) -> CodingKey in
+//      // All keys are the same!
+//      return _TestKey(stringValue: "oneTwo")!
+//    }
+//
+//    // Decoding
+//    // This input has a dictionary with two keys, but only one will end up in the container
+//    let input = "{\"unused key 1\":\"test1\",\"unused key 2\":\"test2\"}".data(using: .utf8)!
+//    let decoder = JSONDecoder()
+//    decoder.keyDecodingStrategy = .custom(customKeyConversion)
+//
+//    let decodingResult = try! decoder.decode(DecodeMe5.self, from: input)
+//    // There will be only one result for oneTwo (the second one in the json)
+//    expectEqual(1, decodingResult.numberOfKeys)
+//
+//    // Encoding
+//    let encoded = DecodeMe5()
+//    let encoder = JSONEncoder()
+//    encoder.keyEncodingStrategy = .custom(customKeyConversion)
+//    let decodingResultData = try! encoder.encode(encoded)
+//    let decodingResultString = String(bytes: decodingResultData, encoding: .utf8)
+//
+//    // There will be only one value in the result (the second one encoded)
+//    expectEqual("{\"oneTwo\":\"test2\"}", decodingResultString)
+//  }
 
   // MARK: - Encoder Features
   func testNestedContainerCodingPaths() {
