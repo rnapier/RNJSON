@@ -11,6 +11,29 @@ public enum JSONError: Swift.Error {
     case missingValue
 }
 
+public func makeJSON(fromAny value: Any) throws -> JSONValue {
+    if let string = value as? String { return JSONString(string) }
+
+    else if let number = value as? NSNumber { return JSONNumber(number) }
+
+    else if let bool = value as? Bool { return JSONBool(bool) }
+
+    else if let object = value as? [String: Any] {
+        return JSONObject(try object.mapValues(makeJSON))
+    }
+
+    else if let array = value as? [Any] {
+        return JSONArray(try array.map(makeJSON))
+    }
+
+    else if value is NSNull { return JSONNull() }
+
+    else {
+        throw EncodingError.invalidValue(value, EncodingError.Context(codingPath: [],
+                                                                      debugDescription: "Cannot encode value"))
+    }
+}
+
 public protocol JSONValue {
     func stringValue() throws -> String
 
@@ -70,6 +93,7 @@ public struct JSONNumber: JSONValue {
     public var digitString: String
     public init<Number: Numeric>(_ number: Number) { self.digitString = "\(number)" }
     public init(_ number: NSDecimalNumber) { self.digitString = "\(number)" }
+    public init(_ number: NSNumber)  { self.digitString = "\(number)" }
 
     init(_ token: JSONTokenNumber) throws { self.digitString = try String(data: token.data, encoding: .utf8) ?? { throw JSONError.dataCorrupted }() } // FIXME: Validate
 
@@ -91,6 +115,18 @@ public struct JSONBool: JSONValue {
 public struct JSONObject: JSONValue {
     public var keyValues: [(key: String, value: JSONValue)]
     public init(_ keyValues: [(key: String, value: JSONValue)] = []) { self.keyValues = keyValues }
+    public init(_ dictionary: [String: JSONValue]) { self.init(Array(dictionary)) }
+    public init(_ dictionary: NSDictionary) throws {
+        if let dict = dictionary as? [String: JSONValue] {
+            self.init(dict)
+        } else {
+            self.init(try dictionary.map { (key, value) in
+                guard let key = key as? String else { throw JSONError.typeMismatch }
+                return try (key, value as? JSONValue ?? makeJSON(fromAny: value))
+            })
+        }
+    }
+
     public mutating func add(value: JSONValue, for key: String) {
         keyValues.append((key: key, value: value))
     }
@@ -138,6 +174,7 @@ extension JSONObject: Collection {
 public struct JSONArray: JSONValue {
     public var elements: [JSONValue]
     public init(_ elements: [JSONValue] = []) { self.elements = elements }
+    public init(_ array: NSArray) throws { self.init(try array.map(makeJSON)) }
     public mutating func append(_ element: JSONValue) {
         elements.append(element)
     }
@@ -163,3 +200,4 @@ extension JSONArray: Collection {
 public struct JSONNull: JSONValue {
     public var isNull: Bool { true }
 }
+
