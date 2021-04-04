@@ -17,6 +17,7 @@
 //===----------------------------------------------------------------------===//
 
 import Foundation
+import XCTest   // RNJSON
 
 public struct SourceLoc {
   public let file: String
@@ -99,7 +100,7 @@ func _printStackTrace(_ stackTrace: SourceLocStack?) {
 }
 
 //fileprivate var _anyExpectFailed = AtomicBool(false)
-//
+
 //fileprivate struct AtomicBool {
 //
 //    private var _value: _stdlib_AtomicInt
@@ -128,6 +129,9 @@ public func expectationFailure(
   stackTrace.print()
   print(reason, terminator: reason == "" ? "" : "\n")
   print(message, terminator: message == "" ? "" : "\n")
+    // RNJSON
+    XCTFail(message)
+    //
 }
 
 public func expectEqual<T : Equatable>(_ expected: T, _ actual: T,
