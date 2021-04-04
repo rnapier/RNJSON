@@ -12,23 +12,15 @@ public enum JSONError: Swift.Error {
 }
 
 public func makeJSON(fromAny value: Any) throws -> JSONValue {
-    if let string = value as? String { return JSONString(string) }
-
-    else if let number = value as? NSNumber { return JSONNumber(number) }
-
-    else if let bool = value as? Bool { return JSONBool(bool) }
-
-    else if let object = value as? [String: Any] {
-        return JSONObject(try object.mapValues(makeJSON))
-    }
-
-    else if let array = value as? [Any] {
-        return JSONArray(try array.map(makeJSON))
-    }
-
-    else if value is NSNull { return JSONNull() }
-
-    else {
+    switch value {
+    case let json as JSONValue: return json
+    case let string as String: return JSONString(string)
+    case let number as NSNumber: return JSONNumber(number)
+    case let bool as Bool: return JSONBool(bool)
+    case let array as [Any]: return JSONArray(try array.map(makeJSON))
+    case is NSNull: return JSONNull()
+    case let object as [String: Any]: return JSONObject(try object.mapValues(makeJSON))
+    default:
         throw EncodingError.invalidValue(value, EncodingError.Context(codingPath: [],
                                                                       debugDescription: "Cannot encode value"))
     }
@@ -122,7 +114,7 @@ public struct JSONObject: JSONValue {
         } else {
             self.init(try dictionary.map { (key, value) in
                 guard let key = key as? String else { throw JSONError.typeMismatch }
-                return try (key, value as? JSONValue ?? makeJSON(fromAny: value))
+                return try (key, makeJSON(fromAny: value))
             })
         }
     }
