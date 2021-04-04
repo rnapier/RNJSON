@@ -19,7 +19,7 @@ public class JSONWriter {
         case let bool as JSONBool: content = encode(bool: bool.value)
         case let object as JSONObject: content = try encode(object: object)
         case let array as JSONArray: content = try encode(array: array)
-        case is JSONNull: content = encode(string: "null")
+        case is JSONNull: content = Data("null".utf8)
         default: throw JSONError.unknownValue(value)
         }
         return content
