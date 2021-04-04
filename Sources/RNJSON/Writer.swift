@@ -29,7 +29,6 @@ public class JSONWriter {
     }
 
     private func encode(_ value: JSONValue, depth: Int) throws -> String {
-
         switch value {
         case let string as JSONString: return "\"\(string.string)\""
         case let number as JSONNumber: return number.digitString
@@ -42,9 +41,24 @@ public class JSONWriter {
     }
 
     private func encode(object: JSONObject, depth: Int) throws -> String {
-        let keyValues = try object.map { (key, value) in try "\"\(key)\":\(encode(value))" }
-        let body = keyValues.joined(separator: ",")
-        return "{\(body)}"
+        var afterBrace = ""
+        var outsideIndent = ""
+        var insideIndent = ""
+        var aroundColon = ""
+        var afterComma = ""
+
+        if options.contains(.prettyPrinted) {
+            afterBrace = "\n"
+            outsideIndent = String(repeating: " ", count: 2 * depth)
+            insideIndent = String(repeating: " ", count: 2 * (depth + 1))
+            aroundColon = " "
+            afterComma = "\n"
+        }
+
+        let keyValues = try object.map { (key, value) in
+            try "\(insideIndent)\"\(key)\"\(aroundColon):\(aroundColon)\(encode(value))" }
+        let body = keyValues.joined(separator: ",\(afterComma)")
+        return "\(outsideIndent){\(afterBrace)\(body)\(outsideIndent)}"
     }
 
     private func encode(array: JSONArray, depth: Int) throws -> String {
