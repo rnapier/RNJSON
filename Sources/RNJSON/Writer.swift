@@ -55,12 +55,15 @@ public class JSONWriter {
             afterComma = "\n"
         }
 
-        let keyValues = try object.map { (key, value) in
-            try "\(insideIndent)\"\(key)\"\(aroundColon):\(aroundColon)\(encode(value))" }
+        let keys = options.contains(.sortedKeys) ? object.keys.sorted() : object.keys
+
+        let keyValues = try keys.map { key in
+            try "\(insideIndent)\"\(key)\"\(aroundColon):\(aroundColon)\(encode(object[key]!))" }
         let body = keyValues.joined(separator: ",\(afterComma)")
         return "\(outsideIndent){\(afterBrace)\(body)\(afterComma)\(outsideIndent)}"
     }
 
+    // FIXME: Doesn't pretty-print
     private func encode(array: JSONArray, depth: Int) throws -> String {
         let values = try array.map { (value) in try encode(value) }
         let body = values.joined(separator: ",")
