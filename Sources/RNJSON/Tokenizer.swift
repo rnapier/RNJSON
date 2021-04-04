@@ -121,7 +121,7 @@ public class JSONTokenizer {
         case 0x22: // "
             return try extractString(from: data)
 
-        case 0x2d, 0x30...0x49: // -, 0-9
+        case 0x2d, 0x30...0x39: // -, 0-9
             return extractNumber(from: data)
 
         case 0x09, 0x0a, 0x0d, 0x20: // consume whitespace

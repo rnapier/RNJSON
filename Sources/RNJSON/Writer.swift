@@ -8,40 +8,48 @@
 import Foundation
 
 public class JSONWriter {
-    public init() {}
+    public struct Options : OptionSet {
+        public var rawValue: UInt
+        public init(rawValue: UInt) { self.rawValue = rawValue }
 
-    public func encode(_ value: JSONValue) throws -> Data {
-        let content: Data
+        public static let prettyPrinted = Options(rawValue: 1 << 0)
+
+        /* Sorts dictionary keys for output using [NSLocale systemLocale]. Keys are compared using NSNumericSearch. The specific sorting method used is subject to change.
+         */
+        public static var sortedKeys = Options(rawValue: 1 << 1)
+        public static var withoutEscapingSlashes = Options(rawValue: 1 << 2)
+    }
+
+    public init(options: Options = []) { self.options = options }
+
+    public let options: Options
+
+    public func encode(_ value: JSONValue) throws -> String {
+        try encode(value, depth: 0)
+    }
+
+    private func encode(_ value: JSONValue, depth: Int) throws -> String {
 
         switch value {
-        case let string as JSONString: content = encode(string: string.string)
-        case let number as JSONNumber: content = Data(number.digitString.utf8)
-        case let bool as JSONBool: content = encode(bool: bool.value)
-        case let object as JSONObject: content = try encode(object: object)
-        case let array as JSONArray: content = try encode(array: array)
-        case is JSONNull: content = Data("null".utf8)
+        case let string as JSONString: return "\"\(string.string)\""
+        case let number as JSONNumber: return number.digitString
+        case let bool as JSONBool: return bool.value ? "true" : "false"
+        case let object as JSONObject: return try encode(object: object, depth: depth)
+        case let array as JSONArray: return try encode(array: array, depth: depth)
+        case is JSONNull: return "null"
         default: throw JSONError.unknownValue(value)
         }
-        return content
     }
 
-    private func encode(string: String) -> Data {
-        Data("\"\(string)\"".utf8)
+    private func encode(object: JSONObject, depth: Int) throws -> String {
+        let keyValues = try object.map { (key, value) in try "\"\(key)\":\(encode(value))" }
+        let body = keyValues.joined(separator: ",")
+        return "{\(body)}"
     }
 
-    private func encode(bool: Bool) -> Data {
-        Data((bool ? "true" : "false").utf8)
-    }
-
-    private func encode(object: JSONObject) throws -> Data {
-        let keyValues = try object.map { (key, value) in try Data("\"\(key)\":".utf8) + encode(value) }
-        let body = Data(keyValues.joined(separator: ",".utf8))
-        return Data("{".utf8) + body + Data("}".utf8)
-    }
-
-    private func encode(array: JSONArray) throws -> Data {
+    private func encode(array: JSONArray, depth: Int) throws -> String {
         let values = try array.map { (value) in try encode(value) }
-        let body = Data(values.joined(separator: ",".utf8))
-        return Data("[".utf8) + body + Data("]".utf8)
+        let body = values.joined(separator: ",")
+        return "[\(body)]"
     }
 }

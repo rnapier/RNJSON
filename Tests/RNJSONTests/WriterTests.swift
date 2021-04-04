@@ -15,7 +15,7 @@ final class WriterTests: XCTestCase {
 
         let json = try writer.encode(JSONString("TestData"))
 
-        XCTAssertEqual(json, Data("\"TestData\"".utf8))
+        XCTAssertEqual(json, "\"TestData\"")
     }
 
 }

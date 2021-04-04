@@ -258,7 +258,7 @@ open class RNJSONEncoder {
         }
 
         do {
-           return try JSONWriter().encode(encodeValue)
+            return try Data(JSONWriter().encode(encodeValue).utf8)
         } catch {
             throw EncodingError.invalidValue(value,
                                              EncodingError.Context(codingPath: [], debugDescription: "Unable to encode the given top-level value to JSON.", underlyingError: error))
