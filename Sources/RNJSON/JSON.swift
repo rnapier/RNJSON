@@ -82,10 +82,10 @@ public struct JSONString: JSONValue {
 }
 
 public struct JSONNumber: JSONValue {
+    private static let formatter = NumberFormatter()
     public var digitString: String
-    public init<Number: Numeric>(_ number: Number) { self.digitString = "\(number)" }
-    public init(_ number: NSDecimalNumber) { self.digitString = "\(number)" }
-    public init(_ number: NSNumber)  { self.digitString = "\(number)" }
+    public init<Number: Numeric>(_ number: Number) { self.digitString = Self.formatter.string(for: number)! }
+    public init(_ number: NSNumber)  { self.digitString = Self.formatter.string(from: number)! }
 
     init(_ token: JSONTokenNumber) throws { self.digitString = try String(data: token.data, encoding: .utf8) ?? { throw JSONError.dataCorrupted }() } // FIXME: Validate
 
