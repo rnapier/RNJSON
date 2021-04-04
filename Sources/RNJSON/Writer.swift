@@ -17,7 +17,7 @@ public class JSONWriter {
         /* Sorts dictionary keys for output using [NSLocale systemLocale]. Keys are compared using NSNumericSearch. The specific sorting method used is subject to change.
          */
         public static var sortedKeys = Options(rawValue: 1 << 1)
-        public static var withoutEscapingSlashes = Options(rawValue: 1 << 2)
+        public static var withoutEscapingSlashes = Options(rawValue: 1 << 3)
     }
 
     public init(options: Options = []) { self.options = options }
@@ -58,7 +58,7 @@ public class JSONWriter {
         let keyValues = try object.map { (key, value) in
             try "\(insideIndent)\"\(key)\"\(aroundColon):\(aroundColon)\(encode(value))" }
         let body = keyValues.joined(separator: ",\(afterComma)")
-        return "\(outsideIndent){\(afterBrace)\(body)\(outsideIndent)}"
+        return "\(outsideIndent){\(afterBrace)\(body)\(afterComma)\(outsideIndent)}"
     }
 
     private func encode(array: JSONArray, depth: Int) throws -> String {

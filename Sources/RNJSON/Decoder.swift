@@ -257,8 +257,10 @@ open class RNJSONEncoder {
             preconditionFailure("Invalid topLevel value.")
         }
 
+        let writingOptions = JSONWriter.Options(rawValue: self.outputFormatting.rawValue)
+
         do {
-            return try Data(JSONWriter().encode(encodeValue).utf8)
+            return try Data(JSONWriter(options: writingOptions).encode(encodeValue).utf8)
         } catch {
             throw EncodingError.invalidValue(value,
                                              EncodingError.Context(codingPath: [], debugDescription: "Unable to encode the given top-level value to JSON.", underlyingError: error))
