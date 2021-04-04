@@ -152,48 +152,46 @@ class TestJSONEncoder : TestJSONEncoderSuper {
     }
   }
 
-  func testEncodingConflictedTypeNestedContainersWithTheSameTopLevelKey() throws {
-    // RNJSON: This crashes for Swift 5.4 JSONEncoder with EXC_BAD_INSTRUCTION when calling nestedUnkeyedContainer.
-    throw XCTSkip()
-
-    struct Model : Encodable, Equatable {
-      let first: String
-
-      func encode(to encoder: Encoder) throws {
-        var container = encoder.container(keyedBy: TopLevelCodingKeys.self)
-
-        var firstNestedContainer = container.nestedContainer(keyedBy: FirstNestedCodingKeys.self, forKey: .top)
-        try firstNestedContainer.encode(self.first, forKey: .first)
-
-        // The following line would fail as it attempts to re-encode into already encoded container is invalid. This will always fail
-        var secondNestedContainer = container.nestedUnkeyedContainer(forKey: .top)
-        try secondNestedContainer.encode("second")
-      }
-
-      init(first: String) {
-        self.first = first
-      }
-
-      static var testValue: Model {
-        return Model(first: "Johnny Appleseed")
-      }
-
-      enum TopLevelCodingKeys : String, CodingKey {
-        case top
-      }
-      enum FirstNestedCodingKeys : String, CodingKey {
-        case first
-      }
-    }
-
-    let model = Model.testValue
-    // This following test would fail as it attempts to re-encode into already encoded container is invalid. This will always fail
-    if #available(OSX 10.13, iOS 11.0, watchOS 4.0, tvOS 11.0, *) {
-      _testEncodeFailure(of: model)
-    } else {
-      _testEncodeFailure(of: model)
-    }
-  }
+    // RNJSON: This test includes a precondition failure
+//  func testEncodingConflictedTypeNestedContainersWithTheSameTopLevelKey() throws {
+//    struct Model : Encodable, Equatable {
+//      let first: String
+//
+//      func encode(to encoder: Encoder) throws {
+//        var container = encoder.container(keyedBy: TopLevelCodingKeys.self)
+//
+//        var firstNestedContainer = container.nestedContainer(keyedBy: FirstNestedCodingKeys.self, forKey: .top)
+//        try firstNestedContainer.encode(self.first, forKey: .first)
+//
+//        // The following line would fail as it attempts to re-encode into already encoded container is invalid. This will always fail
+//        var secondNestedContainer = container.nestedUnkeyedContainer(forKey: .top)
+//        try secondNestedContainer.encode("second")
+//      }
+//
+//      init(first: String) {
+//        self.first = first
+//      }
+//
+//      static var testValue: Model {
+//        return Model(first: "Johnny Appleseed")
+//      }
+//
+//      enum TopLevelCodingKeys : String, CodingKey {
+//        case top
+//      }
+//      enum FirstNestedCodingKeys : String, CodingKey {
+//        case first
+//      }
+//    }
+//
+//    let model = Model.testValue
+//    // This following test would fail as it attempts to re-encode into already encoded container is invalid. This will always fail
+//    if #available(OSX 10.13, iOS 11.0, watchOS 4.0, tvOS 11.0, *) {
+//      _testEncodeFailure(of: model)
+//    } else {
+//      _testEncodeFailure(of: model)
+//    }
+//  }
 
   // MARK: - Output Formatting Tests
   func testEncodingOutputFormattingDefault() {
