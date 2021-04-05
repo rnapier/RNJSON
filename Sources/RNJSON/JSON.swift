@@ -18,7 +18,7 @@ public enum JSONValue {
     public static let formatter = NumberFormatter()
 
     case string(String)
-    case number(String)
+    case number(digits: String)
     case bool(Bool)
     case object(JSONObject)
     case array(JSONArray)
@@ -144,7 +144,7 @@ extension String: LosslessJSONConvertible {
 }
 
 extension BinaryInteger {
-    public func jsonValue() -> JSONValue { .number(JSONValue.formatter.string(for: self)!) }
+    public func jsonValue() -> JSONValue { .number(digits: JSONValue.formatter.string(for: self)!) }
 }
 
 extension Int: LosslessJSONConvertible {}
@@ -159,7 +159,7 @@ extension UInt32: LosslessJSONConvertible {}
 extension UInt64: LosslessJSONConvertible {}
 
 extension BinaryFloatingPoint {
-    public func jsonValue() -> JSONValue { .number(JSONValue.formatter.string(for: self)!) }
+    public func jsonValue() -> JSONValue { .number(digits: JSONValue.formatter.string(for: self)!) }
 }
 
 extension Float: LosslessJSONConvertible {}
@@ -168,7 +168,7 @@ extension Double: LosslessJSONConvertible {}
 extension Decimal: LosslessJSONConvertible {
     public func jsonValue() -> JSONValue {
         var decimal = self
-        return .number(NSDecimalString(&decimal, nil))
+        return .number(digits: NSDecimalString(&decimal, nil))
     }
 }
 
@@ -252,7 +252,7 @@ extension JSONTokenNumber: JSONConvertible {
     public func jsonValue() throws -> JSONValue {
         // FIXME: Validate digitString
         guard let digits = String(data: self.data, encoding: .utf8) else { throw JSONError.dataCorrupted }
-        return .number(digits)
+        return .number(digits: digits)
     }
 }
 
