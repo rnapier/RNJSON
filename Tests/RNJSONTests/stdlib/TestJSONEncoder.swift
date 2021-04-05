@@ -400,7 +400,7 @@ class TestJSONEncoder : TestJSONEncoderSuper {
 
   // MARK: - Data Strategy Tests
   func testEncodingData() {
-    let data = Data(bytes: [0xDE, 0xAD, 0xBE, 0xEF])
+    let data = Data([0xDE, 0xAD, 0xBE, 0xEF])
 
     let expectedJSON = "[222,173,190,239]".data(using: .utf8)!
     _testRoundTrip(of: data,
@@ -416,7 +416,7 @@ class TestJSONEncoder : TestJSONEncoderSuper {
   }
 
   func testEncodingDataBase64() {
-    let data = Data(bytes: [0xDE, 0xAD, 0xBE, 0xEF])
+    let data = Data([0xDE, 0xAD, 0xBE, 0xEF])
 
     let expectedJSON = "\"3q2+7w==\"".data(using: .utf8)!
     _testRoundTrip(of: data, expectedJSON: expectedJSON)
