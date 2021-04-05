@@ -251,8 +251,8 @@ open class RNJSONEncoder {
         let encodeValue: JSONValue
         switch topLevel {
         case let value as JSONValue: encodeValue = value
-        case let dict as NSDictionary: encodeValue = try JSONObject(dict)   // FIXME: precondition?
-        case let array as NSArray: encodeValue = try JSONArray(array)   // FIXME: precondition?
+        case let dict as NSDictionary: encodeValue = try! JSONObject(dict)
+        case let array as NSArray: encodeValue = try! JSONArray(array)
         default:
             preconditionFailure("Invalid topLevel value.")
         }
