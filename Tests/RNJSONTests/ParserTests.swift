@@ -59,7 +59,7 @@ final class RNJSONTests: XCTestCase {
         let json = "[1,2,3]"
         let result = try JSONParser().parse(data: Data(json.utf8))
 
-        XCTAssertEqual(result.count, 3)
+        XCTAssertEqual(try result.count(), 3)
         XCTAssertEqual(try result[0].intValue(), 1)
         XCTAssertEqual(try result[1].intValue(), 2)
         XCTAssertEqual(try result[2].intValue(), 3)

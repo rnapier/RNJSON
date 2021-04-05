@@ -72,12 +72,11 @@ public enum JSONValue {
         return object.first(where: { $0.key == key })?.value
     }
 
-    public var count: Int {
+    public func count() throws -> Int {
         switch self {
         case let .array(array): return array.count
         case let .object(object): return object.count
-        case .null: return 0
-        default: return 1
+        default: throw JSONError.typeMismatch
         }
     }
 
