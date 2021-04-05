@@ -99,13 +99,9 @@ public enum JSONValue {
         guard case .null = self else { return false }
         return true
     }
-}
 
-extension JSONValue {
-
-
-    var digits: String? {
-        guard case let .number(digits) = self else { return nil }
+    func digits() throws -> String {
+        guard case let .number(digits) = self else { throw JSONError.typeMismatch }
         return digits
     }
 }

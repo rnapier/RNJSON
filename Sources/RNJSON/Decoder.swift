@@ -2124,7 +2124,7 @@ private extension __JSONDecoder {
     func unbox(_ value: JSONValue, as type: Int.Type) throws -> Int? {
         guard !(value.isNull) else { return nil }
 
-        guard let digits = value.digits else {
+        guard let digits = try? value.digits() else {
             throw DecodingError._typeMismatch(at: self.codingPath, expectation: type, reality: value)
         }
 
@@ -2138,7 +2138,7 @@ private extension __JSONDecoder {
     func unbox(_ value: JSONValue, as type: Int8.Type) throws -> Int8? {
         guard !(value.isNull) else { return nil }
 
-        guard let digits = value.digits else {
+        guard let digits = try? value.digits() else {
             throw DecodingError._typeMismatch(at: self.codingPath, expectation: type, reality: value)
         }
 
@@ -2152,7 +2152,7 @@ private extension __JSONDecoder {
     func unbox(_ value: JSONValue, as type: Int16.Type) throws -> Int16? {
         guard !(value.isNull) else { return nil }
 
-        guard let digits = value.digits else {
+        guard let digits = try? value.digits() else {
             throw DecodingError._typeMismatch(at: self.codingPath, expectation: type, reality: value)
         }
 
@@ -2166,7 +2166,7 @@ private extension __JSONDecoder {
     func unbox(_ value: JSONValue, as type: Int32.Type) throws -> Int32? {
         guard !(value.isNull) else { return nil }
 
-        guard let digits = value.digits else {
+        guard let digits = try? value.digits() else {
             throw DecodingError._typeMismatch(at: self.codingPath, expectation: type, reality: value)
         }
 
@@ -2180,7 +2180,7 @@ private extension __JSONDecoder {
     func unbox(_ value: JSONValue, as type: Int64.Type) throws -> Int64? {
         guard !(value.isNull) else { return nil }
 
-        guard let digits = value.digits else {
+        guard let digits = try? value.digits() else {
             throw DecodingError._typeMismatch(at: self.codingPath, expectation: type, reality: value)
         }
 
@@ -2195,7 +2195,7 @@ private extension __JSONDecoder {
     func unbox(_ value: JSONValue, as type: UInt.Type) throws -> UInt? {
         guard !(value.isNull) else { return nil }
 
-        guard let digits = value.digits else {
+        guard let digits = try? value.digits() else {
             throw DecodingError._typeMismatch(at: self.codingPath, expectation: type, reality: value)
         }
 
@@ -2210,7 +2210,7 @@ private extension __JSONDecoder {
     func unbox(_ value: JSONValue, as type: UInt8.Type) throws -> UInt8? {
         guard !(value.isNull) else { return nil }
 
-        guard let digits = value.digits else {
+        guard let digits = try? value.digits() else {
             throw DecodingError._typeMismatch(at: self.codingPath, expectation: type, reality: value)
         }
 
@@ -2224,7 +2224,7 @@ private extension __JSONDecoder {
     func unbox(_ value: JSONValue, as type: UInt16.Type) throws -> UInt16? {
         guard !(value.isNull) else { return nil }
 
-        guard let digits = value.digits else {
+        guard let digits = try? value.digits() else {
             throw DecodingError._typeMismatch(at: self.codingPath, expectation: type, reality: value)
         }
 
@@ -2238,7 +2238,7 @@ private extension __JSONDecoder {
     func unbox(_ value: JSONValue, as type: UInt32.Type) throws -> UInt32? {
         guard !(value.isNull) else { return nil }
 
-        guard let digits = value.digits else {
+        guard let digits = try? value.digits() else {
             throw DecodingError._typeMismatch(at: self.codingPath, expectation: type, reality: value)
         }
 
@@ -2252,7 +2252,7 @@ private extension __JSONDecoder {
     func unbox(_ value: JSONValue, as type: UInt64.Type) throws -> UInt64? {
         guard !(value.isNull) else { return nil }
 
-        guard let digits = value.digits else {
+        guard let digits = try? value.digits() else {
             throw DecodingError._typeMismatch(at: self.codingPath, expectation: type, reality: value)
         }
 
@@ -2266,7 +2266,7 @@ private extension __JSONDecoder {
     func unbox(_ value: JSONValue, as type: Float.Type) throws -> Float? {
         guard !(value.isNull) else { return nil }
 
-        if let digits = value.digits {
+        if let digits = try? value.digits() {
             // We are willing to return a Float by losing precision:
             // * If the original value was integral,
             //   * and the integral value was > Float.greatestFiniteMagnitude, we will fail
@@ -2295,7 +2295,7 @@ private extension __JSONDecoder {
     func unbox(_ value: JSONValue, as type: Double.Type) throws -> Double? {
         guard !(value.isNull) else { return nil }
 
-        if let digits = value.digits {
+        if let digits = try? value.digits() {
             // We are always willing to return the number as a Double:
             // * If the original value was integral, it is guaranteed to fit in a Double; we are willing to lose precision past 2^53 if you encoded a UInt64 but requested a Double
             // * If it was a Float or Double, you will get back the precise value
