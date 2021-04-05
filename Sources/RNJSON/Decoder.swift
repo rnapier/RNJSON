@@ -252,6 +252,7 @@ open class RNJSONEncoder {
         switch topLevel {
         case let value as JSONValue: encodeValue = value
         case let dict as NSDictionary: encodeValue = try! JSONValue(dict)
+        case let dict as OrderedDictionary: encodeValue = JSONValue(dict)
         case let array as NSArray: encodeValue = try! JSONValue(array)
         default:
             preconditionFailure("Invalid topLevel value.")
@@ -315,12 +316,12 @@ private class __JSONEncoder : Encoder {
     // MARK: - Encoder Methods
     public func container<Key>(keyedBy: Key.Type) -> KeyedEncodingContainer<Key> {
         // If an existing keyed container was already requested, return that one.
-        let topContainer: NSMutableDictionary
+        let topContainer: OrderedDictionary
         if self.canEncodeNewValue {
             // We haven't yet pushed a container at this level; do so here.
             topContainer = self.storage.pushKeyedContainer()
         } else {
-            guard let container = self.storage.containers.last as? NSMutableDictionary else {
+            guard let container = self.storage.containers.last as? OrderedDictionary else {
                 preconditionFailure("Attempt to push new keyed encoding container when already previously encoded at this path.")
             }
 
@@ -355,7 +356,7 @@ private class __JSONEncoder : Encoder {
 
 // MARK: - Encoding Storage and Containers
 
-private protocol _JSONEncodingContainer {}
+private protocol _JSONEncodingContainer: JSONConvertible {}
 extension JSONValue: _JSONEncodingContainer {}
 //extension JSONNumber: _JSONEncodingContainer {}
 //extension JSONBool: _JSONEncodingContainer {}
@@ -381,8 +382,8 @@ private struct _JSONEncodingStorage {
         return self.containers.count
     }
 
-    mutating func pushKeyedContainer() -> NSMutableDictionary {
-        let dictionary = NSMutableDictionary()
+    mutating func pushKeyedContainer() -> OrderedDictionary {
+        let dictionary = OrderedDictionary()
         self.containers.append(dictionary)
         return dictionary
     }
@@ -414,7 +415,7 @@ private struct _JSONKeyedEncodingContainer<K : CodingKey> : KeyedEncodingContain
     private let encoder: __JSONEncoder
 
     /// A reference to the container we're writing to.
-    private let container: NSMutableDictionary
+    private let container: OrderedDictionary
 
     /// The path of coding keys taken to get to this point in encoding.
     private(set) public var codingPath: [CodingKey]
@@ -422,7 +423,7 @@ private struct _JSONKeyedEncodingContainer<K : CodingKey> : KeyedEncodingContain
     // MARK: - Initialization
 
     /// Initializes `self` with the given references.
-    init(referencing encoder: __JSONEncoder, codingPath: [CodingKey], wrapping container: NSMutableDictionary) {
+    init(referencing encoder: __JSONEncoder, codingPath: [CodingKey], wrapping container: OrderedDictionary) {
         self.encoder = encoder
         self.codingPath = codingPath
         self.container = container
@@ -506,15 +507,15 @@ private struct _JSONKeyedEncodingContainer<K : CodingKey> : KeyedEncodingContain
 
     public mutating func nestedContainer<NestedKey>(keyedBy keyType: NestedKey.Type, forKey key: Key) -> KeyedEncodingContainer<NestedKey> {
         let containerKey = _converted(key).stringValue
-        let dictionary: NSMutableDictionary
+        let dictionary: OrderedDictionary
         if let existingContainer = self.container[containerKey] {
             precondition(
-                existingContainer is NSMutableDictionary,
+                existingContainer is OrderedDictionary,
                 "Attempt to re-encode into nested KeyedEncodingContainer<\(Key.self)> for key \"\(containerKey)\" is invalid: non-keyed container already encoded for this key"
             )
-            dictionary = existingContainer as! NSMutableDictionary
+            dictionary = existingContainer as! OrderedDictionary
         } else {
-            dictionary = NSMutableDictionary()
+            dictionary = OrderedDictionary()
             self.container[containerKey] = dictionary
         }
 
@@ -619,7 +620,7 @@ private struct _JSONUnkeyedEncodingContainer : UnkeyedEncodingContainer {
         self.codingPath.append(_JSONKey(index: self.count))
         defer { self.codingPath.removeLast() }
 
-        let dictionary = NSMutableDictionary()
+        let dictionary = OrderedDictionary()
         self.container.add(dictionary)
 
         let container = _JSONKeyedEncodingContainer<NestedKey>(referencing: self.encoder, codingPath: self.codingPath, wrapping: dictionary)
@@ -965,7 +966,7 @@ private class __JSONReferencingEncoder : __JSONEncoder {
         case array(NSMutableArray, Int)
 
         /// Referencing a specific key in a dictionary container.
-        case dictionary(NSMutableDictionary, String)
+        case dictionary(OrderedDictionary, String)
     }
 
     // MARK: - Properties
@@ -988,7 +989,7 @@ private class __JSONReferencingEncoder : __JSONEncoder {
     }
 
     /// Initializes `self` by referencing the given dictionary container in the given encoder.
-    init(referencing encoder: __JSONEncoder, key: CodingKey, convertedKey: __shared CodingKey, wrapping dictionary: NSMutableDictionary) {
+    init(referencing encoder: __JSONEncoder, key: CodingKey, convertedKey: __shared CodingKey, wrapping dictionary: OrderedDictionary) {
         self.encoder = encoder
         self.reference = .dictionary(dictionary, convertedKey.stringValue)
         super.init(options: encoder.options, codingPath: encoder.codingPath)
@@ -1009,7 +1010,7 @@ private class __JSONReferencingEncoder : __JSONEncoder {
 
     // Finalizes `self` by writing the contents of our storage to the referenced encoder's storage.
     deinit {
-        let value: Any
+        let value: _JSONEncodingContainer
         switch self.storage.count {
         case 0: value = NSDictionary()
         case 1: value = self.storage.popContainer()
@@ -1021,7 +1022,7 @@ private class __JSONReferencingEncoder : __JSONEncoder {
             array.insert(value, at: index)
 
         case .dictionary(let dictionary, let key):
-            dictionary[NSString(string: key)] = value
+            dictionary[key] = value
         }
     }
 }
@@ -2563,5 +2564,42 @@ extension DecodingError {
 //        } else {
 //            return "\(type(of: value))"
 //        }
+    }
+}
+
+private class OrderedDictionary: _JSONEncodingContainer {
+    fileprivate var storage: [(key: String, value: _JSONEncodingContainer)] = []
+    subscript(key: String) -> _JSONEncodingContainer? {
+        get { storage.first(where: { $0.key == key })?.value }
+        set {
+            if let value = newValue {
+                if let index = storage.firstIndex(where: { $0.key == key}) {
+                    self[index] = (key: key, value: value)
+                } else {
+                    storage.append((key: key, value: value))
+                }
+            } else {
+                if let index = self.firstIndex(where: { $0.key == key }) {
+                    storage.remove(at: index)
+                }
+            }
+        }
+    }
+}
+
+extension OrderedDictionary: Collection {
+    var count: Int { storage.count }
+    var startIndex: Int { storage.startIndex }
+    var endIndex: Int { storage.endIndex }
+    func index(after i: Int) -> Int { storage.index(after: i) }
+    subscript(position: Int) -> (key: String, value: _JSONEncodingContainer) {
+        get { storage[position] }
+        set { storage[position] = newValue }
+    }
+}
+
+extension OrderedDictionary: LosslessJSONConvertible {
+    func jsonValue() -> JSONValue {
+        .object(storage.map { (key: $0.key, value: try! $0.value.jsonValue()) })
     }
 }

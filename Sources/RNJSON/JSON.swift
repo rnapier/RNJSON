@@ -15,7 +15,7 @@ public typealias JSONObject = [(key: String, value: JSONValue)]
 public typealias JSONArray = [JSONValue]
 
 public enum JSONValue {
-    private static let formatter = NumberFormatter()
+    public static let formatter = NumberFormatter()
 
     case string(String)
     case number(String)
@@ -121,51 +121,54 @@ extension JSONValue {
         self = .number(digits)
     }
 
-    public init(_ object: [String: JSONValue]) { self = .object(JSONObject(object)) }
+//    public init(_ object: [String: JSONValue]) { self = .object(JSONObject(object)) }
+//
+//    public init(_ dictionary: NSDictionary) throws {
+//        if let dict = dictionary as? [String: JSONValue] {
+//            self.init(dict)
+//        } else {
+//            self = .object(try dictionary.map { (key, value) in
+//                guard let key = key as? String else { throw JSONError.typeMismatch }
+//                return try (key: key, value: JSONValue(fromAny: value))
+//            })
+//        }
+//    }
 
-    public init(_ dictionary: NSDictionary) throws {
-        if let dict = dictionary as? [String: JSONValue] {
-            self.init(dict)
-        } else {
-            self = .object(try dictionary.map { (key, value) in
-                guard let key = key as? String else { throw JSONError.typeMismatch }
-                return try (key: key, value: JSONValue(fromAny: value))
-            })
-        }
-    }
+//    public init(_ array: NSArray) throws { self.init(try array.map { try $0 as? JSONValue ?? JSONValue(fromAny: $0) } ) }
+//
+//    public init(_ string: String) { self = .string(string) }
+//
+//    public init(_ array: JSONArray) { self = .array(array) }
+//
+//    public init(_ bool: Bool) { self = .bool(bool) }
 
-    public init(_ array: NSArray) throws { self.init(try array.map { try $0 as? JSONValue ?? JSONValue(fromAny: $0) } ) }
+    public init(_ convertible: LosslessJSONConvertible) { self = convertible.jsonValue() }
+    public init(_ convertible: JSONConvertible) throws { self = try convertible.jsonValue() }
 
-    public init(_ string: String) { self = .string(string) }
+//    public init(fromAny value: Any) throws {
+//        switch value {
+//        case let json as JSONValue: self = json
+//        case let string as String: self.init(string)
+//        case let number as NSNumber: self.init(number)
+//        case let bool as Bool: self.init(bool)
+//        case let array as [Any]: self.init(try array.map(JSONValue.init(fromAny:)))
+//        case is NSNull: self = .null
+//        case let object as [String: Any]: self.init(try object.mapValues(JSONValue.init(fromAny:)))
+//        default:
+//            throw EncodingError.invalidValue(value, EncodingError.Context(codingPath: [],
+//                                                                          debugDescription: "Cannot encode value"))
+//        }
+//    }
 
-    public init(_ array: JSONArray) { self = .array(array) }
+//    public init(_ number: NSNumber)  { self = .number(Self.formatter.string(from: number)!) }
 
-    public init(_ bool: Bool) { self = .bool(bool) }
-
-    public init(fromAny value: Any) throws {
-        switch value {
-        case let json as JSONValue: self = json
-        case let string as String: self.init(string)
-        case let number as NSNumber: self.init(number)
-        case let bool as Bool: self.init(bool)
-        case let array as [Any]: self.init(try array.map(JSONValue.init(fromAny:)))
-        case is NSNull: self = .null
-        case let object as [String: Any]: self.init(try object.mapValues(JSONValue.init(fromAny:)))
-        default:
-            throw EncodingError.invalidValue(value, EncodingError.Context(codingPath: [],
-                                                                          debugDescription: "Cannot encode value"))
-        }
-    }
-
-    public init(_ number: NSNumber)  { self = .number(Self.formatter.string(from: number)!) }
-
-    public init(digits: String) { self = .number(digits) }
-    public init<Number: BinaryInteger>(_ number: Number) { self = .number(Self.formatter.string(for: number)!) }
-    public init<Number: BinaryFloatingPoint>(_ number: Number) { self = .number(Self.formatter.string(for: number)!) }
-    public init(_ decimal: Decimal) {
-        var decimal = decimal
-        self = .number(NSDecimalString(&decimal, nil))
-    }
+//    public init(digits: String) { self = .number(digits) }
+//    public init<Number: BinaryInteger>(_ number: Number) { self = .number(Self.formatter.string(for: number)!) }
+//    public init<Number: BinaryFloatingPoint>(_ number: Number) { self = .number(Self.formatter.string(for: number)!) }
+//    public init(_ decimal: Decimal) {
+//        var decimal = decimal
+//        self = .number(NSDecimalString(&decimal, nil))
+//    }
 
     var digits: String? {
         guard case let .number(digits) = self else { return nil }
@@ -191,6 +194,106 @@ extension JSONObject {
                 }
             }
         }
+    }
+}
+
+public protocol JSONConvertible {
+    func jsonValue() throws -> JSONValue
+}
+
+public protocol LosslessJSONConvertible: JSONConvertible {
+    func jsonValue() -> JSONValue
+}
+
+extension String: LosslessJSONConvertible {
+    public func jsonValue() -> JSONValue { .string(self) }
+}
+
+extension BinaryInteger {
+    public func jsonValue() -> JSONValue { .number(JSONValue.formatter.string(for: self)!) }
+}
+
+extension Int: LosslessJSONConvertible {}
+extension Int8: LosslessJSONConvertible {}
+extension Int16: LosslessJSONConvertible {}
+extension Int32: LosslessJSONConvertible {}
+extension Int64: LosslessJSONConvertible {}
+extension UInt: LosslessJSONConvertible {}
+extension UInt8: LosslessJSONConvertible {}
+extension UInt16: LosslessJSONConvertible {}
+extension UInt32: LosslessJSONConvertible {}
+extension UInt64: LosslessJSONConvertible {}
+
+extension BinaryFloatingPoint {
+    public func jsonValue() -> JSONValue { .number(JSONValue.formatter.string(for: self)!) }
+}
+
+extension Float: LosslessJSONConvertible {}
+extension Double: LosslessJSONConvertible {}
+
+extension Decimal: LosslessJSONConvertible {
+    public func jsonValue() -> JSONValue {
+        var decimal = self
+        return .number(NSDecimalString(&decimal, nil))
+    }
+}
+
+extension JSONValue: LosslessJSONConvertible {
+    public func jsonValue() -> JSONValue { self }
+}
+
+extension Bool: LosslessJSONConvertible {
+    public func jsonValue() -> JSONValue { .bool(self) }
+}
+
+extension Sequence where Element: LosslessJSONConvertible {
+    public func jsonValue() -> JSONValue { .array(self.map { $0.jsonValue() }) }
+}
+
+extension Sequence where Element: JSONConvertible {
+    public func jsonValue() throws -> JSONValue { .array(try self.map { try $0.jsonValue() }) }
+}
+
+extension NSArray: JSONConvertible {
+    public func jsonValue() throws -> JSONValue {
+        .array(try self.map {
+            guard let value = $0 as? JSONConvertible else { throw JSONError.typeMismatch }
+            return try value.jsonValue()
+        })
+    }
+}
+
+extension NSDictionary: JSONConvertible {
+    public func jsonValue() throws -> JSONValue {
+        guard let dict = self as? [String: JSONConvertible] else { throw JSONError.typeMismatch }
+        return try dict.jsonValue()
+    }
+}
+
+extension Array: LosslessJSONConvertible where Element: LosslessJSONConvertible {}
+extension Array: JSONConvertible where Element: JSONConvertible {}
+
+public extension Sequence where Element == (key: String, value: LosslessJSONConvertible) {
+    func jsonValue() -> JSONValue {
+        return .object(self.map { ($0.key, $0.value.jsonValue()) } )
+    }
+}
+
+public extension Sequence where Element == (key: String, value: JSONConvertible) {
+    func jsonValue() throws -> JSONValue {
+        return .object(try self.map { ($0.key, try $0.value.jsonValue()) } )
+    }
+}
+
+public extension Dictionary where Key == String, Value: LosslessJSONConvertible {
+    func jsonValue() -> JSONValue {
+        return .object(self.map { ($0.key, $0.value.jsonValue()) } )
+    }
+}
+
+public extension Dictionary where Key == String, Value: JSONConvertible {
+    func jsonValue() throws -> JSONValue {
+        return .object(try self.map { ($0.key, try $0.value.jsonValue()) } )
     }
 }
 
@@ -375,3 +478,10 @@ extension JSONObject {
 //    public var isNull: Bool { true }
 //}
 //
+
+//extension Dictionary where Key == String, Value == JSONValue {
+//    func jsonValue() -> JSONValue {
+//        return .object(Array(self))
+//    }
+//}
+
