@@ -24,6 +24,9 @@ public enum JSONValue {
     case array(JSONArray)
     case null
 
+    public init(_ convertible: LosslessJSONConvertible) { self = convertible.jsonValue() }
+    public init(_ convertible: JSONConvertible) throws { self = try convertible.jsonValue() }
+
     public func stringValue() throws -> String {
         guard case let .string(value) = self else { throw JSONError.typeMismatch }
         return value
@@ -99,76 +102,7 @@ public enum JSONValue {
 }
 
 extension JSONValue {
-    public init(_ token: JSONTokenString) throws {
-        // FIXME: Validate string
-        guard let string = token.contents?
-                .replacingOccurrences(of: "\\\\", with: "\\")
-                .replacingOccurrences(of: "\\\"", with: "\"")
-                .replacingOccurrences(of: "\\/", with: "/")
-                .replacingOccurrences(of: "\\b", with: "\u{8}")
-                .replacingOccurrences(of: "\\f", with: "\u{c}")
-                .replacingOccurrences(of: "\\n", with: "\n")
-                .replacingOccurrences(of: "\\r", with: "\r")
-                .replacingOccurrences(of: "\\t", with: "\t")
-        // TODO: Support \u syntax
-        else { throw JSONError.dataCorrupted }
-        self = .string(string)
-    }
 
-    public init(_ token: JSONTokenNumber) throws {
-        // FIXME: Validate digitString
-        guard let digits = String(data: token.data, encoding: .utf8) else { throw JSONError.dataCorrupted }
-        self = .number(digits)
-    }
-
-//    public init(_ object: [String: JSONValue]) { self = .object(JSONObject(object)) }
-//
-//    public init(_ dictionary: NSDictionary) throws {
-//        if let dict = dictionary as? [String: JSONValue] {
-//            self.init(dict)
-//        } else {
-//            self = .object(try dictionary.map { (key, value) in
-//                guard let key = key as? String else { throw JSONError.typeMismatch }
-//                return try (key: key, value: JSONValue(fromAny: value))
-//            })
-//        }
-//    }
-
-//    public init(_ array: NSArray) throws { self.init(try array.map { try $0 as? JSONValue ?? JSONValue(fromAny: $0) } ) }
-//
-//    public init(_ string: String) { self = .string(string) }
-//
-//    public init(_ array: JSONArray) { self = .array(array) }
-//
-//    public init(_ bool: Bool) { self = .bool(bool) }
-
-    public init(_ convertible: LosslessJSONConvertible) { self = convertible.jsonValue() }
-    public init(_ convertible: JSONConvertible) throws { self = try convertible.jsonValue() }
-
-//    public init(fromAny value: Any) throws {
-//        switch value {
-//        case let json as JSONValue: self = json
-//        case let string as String: self.init(string)
-//        case let number as NSNumber: self.init(number)
-//        case let bool as Bool: self.init(bool)
-//        case let array as [Any]: self.init(try array.map(JSONValue.init(fromAny:)))
-//        case is NSNull: self = .null
-//        case let object as [String: Any]: self.init(try object.mapValues(JSONValue.init(fromAny:)))
-//        default:
-//            throw EncodingError.invalidValue(value, EncodingError.Context(codingPath: [],
-//                                                                          debugDescription: "Cannot encode value"))
-//        }
-//    }
-
-//    public init(_ number: NSNumber)  { self = .number(Self.formatter.string(from: number)!) }
-
-//    public init(digits: String) { self = .number(digits) }
-//    public init<Number: BinaryInteger>(_ number: Number) { self = .number(Self.formatter.string(for: number)!) }
-//    public init<Number: BinaryFloatingPoint>(_ number: Number) { self = .number(Self.formatter.string(for: number)!) }
-//    public init(_ decimal: Decimal) {
-//        var decimal = decimal
-//        self = .number(NSDecimalString(&decimal, nil))
-//    }
 
     var digits: String? {
         guard case let .number(digits) = self else { return nil }
@@ -296,6 +230,32 @@ public extension Dictionary where Key == String, Value: JSONConvertible {
         return .object(try self.map { ($0.key, try $0.value.jsonValue()) } )
     }
 }
+
+extension JSONTokenString: JSONConvertible {
+    public func jsonValue() throws -> JSONValue {
+        guard let string = self.contents?
+                .replacingOccurrences(of: "\\\\", with: "\\")
+                .replacingOccurrences(of: "\\\"", with: "\"")
+                .replacingOccurrences(of: "\\/", with: "/")
+                .replacingOccurrences(of: "\\b", with: "\u{8}")
+                .replacingOccurrences(of: "\\f", with: "\u{c}")
+                .replacingOccurrences(of: "\\n", with: "\n")
+                .replacingOccurrences(of: "\\r", with: "\r")
+                .replacingOccurrences(of: "\\t", with: "\t")
+        // TODO: Support \u syntax
+        else { throw JSONError.dataCorrupted }
+        return .string(string)
+    }
+}
+
+extension JSONTokenNumber: JSONConvertible {
+    public func jsonValue() throws -> JSONValue {
+        // FIXME: Validate digitString
+        guard let digits = String(data: self.data, encoding: .utf8) else { throw JSONError.dataCorrupted }
+        return .number(digits)
+    }
+}
+
 
 //extension JSONValue {
 //    public init(fromAny value: Any) throws {
