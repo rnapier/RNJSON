@@ -80,7 +80,7 @@ public enum JSONValue {
         }
     }
 
-    public func get(_ index: Int) throws -> JSONValue {
+    public func getValue(at index: Int) throws -> JSONValue {
         guard case let .array(array) = self else { throw JSONError.typeMismatch }
         guard array.indices.contains(index) else { throw JSONError.missingValue }
         return array[index]
@@ -88,7 +88,7 @@ public enum JSONValue {
 
     public subscript(_ index: Int) -> JSONValue {
         do {
-            return try get(index)
+            return try getValue(at: index)
         } catch {
             return .null
         }
