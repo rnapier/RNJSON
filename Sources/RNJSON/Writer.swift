@@ -30,17 +30,16 @@ public class JSONWriter {
 
     private func encode(_ value: JSONValue, depth: Int) throws -> String {
         switch value {
-        case let string as JSONString: return escaped("\"\(string.string)\"")
-        case let number as JSONNumber: return number.digitString
-        case let bool as JSONBool: return bool.value ? "true" : "false"
-        case let object as JSONObject: return try encode(object: object, depth: depth)
-        case let array as JSONArray: return try encode(array: array, depth: depth)
-        case is JSONNull: return "null"
-        default: throw JSONError.unknownValue(value)
+        case let .string(string): return escaped("\"\(string)\"")
+        case let .number(digits): return digits
+        case let .bool(value): return value ? "true" : "false"
+        case let .object(object): return try encode(object: object, depth: depth)
+        case let .array(array): return try encode(array: array, depth: depth)
+        case .null: return "null"
         }
     }
 
-    private func encode(object: JSONObject, depth: Int) throws -> String {
+    private func encode(object: [(key: String, value: JSONValue)], depth: Int) throws -> String {
         var afterBrace = ""
         var outsideIndent = ""
         var insideIndent = ""
@@ -55,16 +54,18 @@ public class JSONWriter {
             afterComma = "\n"
         }
 
-        let keys = options.contains(.sortedKeys) ? object.keys.sorted() : object.keys
+        let keyValues = options.contains(.sortedKeys) ? object.sorted(by: { $0.key < $1.key }) : object
 
-        let keyValues = try keys.map { key in
-            try "\(insideIndent)\"\(key)\"\(aroundColon):\(aroundColon)\(encode(object[key]!))" }
-        let body = keyValues.joined(separator: ",\(afterComma)")
+        let body = try keyValues.map { key, value in
+            try "\(insideIndent)\"\(key)\"\(aroundColon):\(aroundColon)\(encode(value))"
+        }
+        .joined(separator: ",\(afterComma)")
+
         return "\(outsideIndent){\(afterBrace)\(body)\(afterComma)\(outsideIndent)}"
     }
 
     // FIXME: Doesn't pretty-print
-    private func encode(array: JSONArray, depth: Int) throws -> String {
+    private func encode(array: [JSONValue], depth: Int) throws -> String {
         let values = try array.map { (value) in try encode(value) }
         let body = values.joined(separator: ",")
         return "[\(body)]"

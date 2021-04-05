@@ -251,8 +251,8 @@ open class RNJSONEncoder {
         let encodeValue: JSONValue
         switch topLevel {
         case let value as JSONValue: encodeValue = value
-        case let dict as NSDictionary: encodeValue = try! JSONObject(dict)
-        case let array as NSArray: encodeValue = try! JSONArray(array)
+        case let dict as NSDictionary: encodeValue = try! JSONValue(dict)
+        case let array as NSArray: encodeValue = try! JSONValue(array)
         default:
             preconditionFailure("Invalid topLevel value.")
         }
@@ -356,10 +356,10 @@ private class __JSONEncoder : Encoder {
 // MARK: - Encoding Storage and Containers
 
 private protocol _JSONEncodingContainer {}
-extension JSONString: _JSONEncodingContainer {}
-extension JSONNumber: _JSONEncodingContainer {}
-extension JSONBool: _JSONEncodingContainer {}
-extension JSONNull: _JSONEncodingContainer {}
+extension JSONValue: _JSONEncodingContainer {}
+//extension JSONNumber: _JSONEncodingContainer {}
+//extension JSONBool: _JSONEncodingContainer {}
+//extension JSONNull: _JSONEncodingContainer {}
 extension NSArray: _JSONEncodingContainer {}
 extension NSDictionary: _JSONEncodingContainer {}
 
@@ -445,7 +445,7 @@ private struct _JSONKeyedEncodingContainer<K : CodingKey> : KeyedEncodingContain
     // MARK: - KeyedEncodingContainerProtocol Methods
 
     public mutating func encodeNil(forKey key: Key) throws {
-        self.container[_converted(key).stringValue] = JSONNull()
+        self.container[_converted(key).stringValue] = JSONValue.null
     }
     public mutating func encode(_ value: Bool, forKey key: Key) throws {
         self.container[_converted(key).stringValue] = self.encoder.box(value)
@@ -649,7 +649,7 @@ extension __JSONEncoder : SingleValueEncodingContainer {
 
     public func encodeNil() throws {
         assertCanEncodeNewValue()
-        self.storage.push(container: JSONNull())
+        self.storage.push(container: JSONValue.null)
     }
 
     public func encode(_ value: Bool) throws {
@@ -732,18 +732,18 @@ extension __JSONEncoder : SingleValueEncodingContainer {
 
 private extension __JSONEncoder {
     /// Returns the given value boxed in a container appropriate for pushing onto the container stack.
-    func box(_ value: Bool)   -> _JSONEncodingContainer { return JSONBool(value) }
-    func box(_ value: Int)    -> _JSONEncodingContainer { return JSONNumber(value) }
-    func box(_ value: Int8)   -> _JSONEncodingContainer { return JSONNumber(value) }
-    func box(_ value: Int16)  -> _JSONEncodingContainer { return JSONNumber(value) }
-    func box(_ value: Int32)  -> _JSONEncodingContainer { return JSONNumber(value) }
-    func box(_ value: Int64)  -> _JSONEncodingContainer { return JSONNumber(value) }
-    func box(_ value: UInt)   -> _JSONEncodingContainer { return JSONNumber(value) }
-    func box(_ value: UInt8)  -> _JSONEncodingContainer { return JSONNumber(value) }
-    func box(_ value: UInt16) -> _JSONEncodingContainer { return JSONNumber(value) }
-    func box(_ value: UInt32) -> _JSONEncodingContainer { return JSONNumber(value) }
-    func box(_ value: UInt64) -> _JSONEncodingContainer { return JSONNumber(value) }
-    func box(_ value: String) -> _JSONEncodingContainer { return JSONString(value) }
+    func box(_ value: Bool)   -> _JSONEncodingContainer { return JSONValue(value) }
+    func box(_ value: Int)    -> _JSONEncodingContainer { return JSONValue(value) }
+    func box(_ value: Int8)   -> _JSONEncodingContainer { return JSONValue(value) }
+    func box(_ value: Int16)  -> _JSONEncodingContainer { return JSONValue(value) }
+    func box(_ value: Int32)  -> _JSONEncodingContainer { return JSONValue(value) }
+    func box(_ value: Int64)  -> _JSONEncodingContainer { return JSONValue(value) }
+    func box(_ value: UInt)   -> _JSONEncodingContainer { return JSONValue(value) }
+    func box(_ value: UInt8)  -> _JSONEncodingContainer { return JSONValue(value) }
+    func box(_ value: UInt16) -> _JSONEncodingContainer { return JSONValue(value) }
+    func box(_ value: UInt32) -> _JSONEncodingContainer { return JSONValue(value) }
+    func box(_ value: UInt64) -> _JSONEncodingContainer { return JSONValue(value) }
+    func box(_ value: String) -> _JSONEncodingContainer { return JSONValue(value) }
 
     func box(_ float: Float) throws -> _JSONEncodingContainer {
         guard !float.isInfinite && !float.isNaN else {
@@ -754,15 +754,15 @@ private extension __JSONEncoder {
             }
 
             if float == Float.infinity {
-                return JSONString(posInfString)
+                return JSONValue(posInfString)
             } else if float == -Float.infinity {
-                return JSONString(negInfString)
+                return JSONValue(negInfString)
             } else {
-                return JSONString(nanString)
+                return JSONValue(nanString)
             }
         }
 
-        return JSONNumber(float)
+        return JSONValue(float)
     }
 
     func box(_ double: Double) throws -> _JSONEncodingContainer {
@@ -774,15 +774,15 @@ private extension __JSONEncoder {
             }
 
             if double == Double.infinity {
-                return JSONString(posInfString)
+                return JSONValue(posInfString)
             } else if double == -Double.infinity {
-                return JSONString(negInfString)
+                return JSONValue(negInfString)
             } else {
-                return JSONString(nanString)
+                return JSONValue(nanString)
             }
         }
 
-        return JSONNumber(double)
+        return JSONValue(double)
     }
 
     func box(_ date: Date) throws -> _JSONEncodingContainer {
@@ -794,20 +794,20 @@ private extension __JSONEncoder {
             return self.storage.popContainer()
 
         case .secondsSince1970:
-            return JSONNumber(date.timeIntervalSince1970)
+            return JSONValue(date.timeIntervalSince1970)
 
         case .millisecondsSince1970:
-            return JSONNumber(1000.0 * date.timeIntervalSince1970)
+            return JSONValue(1000.0 * date.timeIntervalSince1970)
 
         case .iso8601:
             if #available(macOS 10.12, iOS 10.0, watchOS 3.0, tvOS 10.0, *) {
-                return JSONString(_iso8601Formatter.string(from: date))
+                return JSONValue(_iso8601Formatter.string(from: date))
             } else {
                 fatalError("ISO8601DateFormatter is unavailable on this platform.")
             }
 
         case .formatted(let formatter):
-            return JSONString(formatter.string(from: date))
+            return JSONValue(formatter.string(from: date))
 
         case .custom(let closure):
             let depth = self.storage.count
@@ -852,7 +852,7 @@ private extension __JSONEncoder {
             return self.storage.popContainer()
 
         case .base64:
-            return JSONString(data.base64EncodedString())
+            return JSONValue(data.base64EncodedString())
 
         case .custom(let closure):
             let depth = self.storage.count
@@ -922,7 +922,7 @@ private extension __JSONEncoder {
             // Encode URLs as single strings.
             return self.box((value as! URL).absoluteString)
         } else if type == Decimal.self || type == NSDecimalNumber.self {
-            return JSONNumber(value as! Decimal)
+            return JSONValue(value as! Decimal)
         } else if value is _JSONStringDictionaryEncodableMarker {
             return try self.box(value as! [String : Encodable])
         }
@@ -1247,7 +1247,7 @@ private class __JSONDecoder : Decoder {
                                                                     debugDescription: "Cannot get keyed decoding container -- found null value instead."))
         }
 
-        guard let topContainer = self.storage.topContainer as? JSONObject else {
+        guard case let .object(topContainer) = self.storage.topContainer else {
             throw DecodingError._typeMismatch(at: self.codingPath, expectation: JSONObject.self, reality: self.storage.topContainer)
         }
 
@@ -1262,7 +1262,7 @@ private class __JSONDecoder : Decoder {
                                                                     debugDescription: "Cannot get unkeyed decoding container -- found null value instead."))
         }
 
-        guard let topContainer = self.storage.topContainer as? JSONArray else {
+        guard case let .array(topContainer) = self.storage.topContainer else {
             throw DecodingError._typeMismatch(at: self.codingPath, expectation: JSONArray.self, reality: self.storage.topContainer)
         }
 
@@ -1620,7 +1620,7 @@ private struct _JSONKeyedDecodingContainer<K : CodingKey> : KeyedDecodingContain
                                                                   debugDescription: "Cannot get \(KeyedDecodingContainer<NestedKey>.self) -- no value found for key \(_errorDescription(of: key))"))
         }
 
-        guard let dictionary = value as? JSONObject else {
+        guard case let .object(dictionary) = value else {
             throw DecodingError._typeMismatch(at: self.codingPath, expectation: JSONObject.self, reality: value)
         }
 
@@ -1638,7 +1638,7 @@ private struct _JSONKeyedDecodingContainer<K : CodingKey> : KeyedDecodingContain
                                                                   debugDescription: "Cannot get UnkeyedDecodingContainer -- no value found for key \(_errorDescription(of: key))"))
         }
 
-        guard let array = value as? JSONArray else {
+        guard case let .array(array) = value else {
             throw DecodingError._typeMismatch(at: self.codingPath, expectation: JSONArray.self, reality: value)
         }
 
@@ -1649,7 +1649,7 @@ private struct _JSONKeyedDecodingContainer<K : CodingKey> : KeyedDecodingContain
         self.decoder.codingPath.append(key)
         defer { self.decoder.codingPath.removeLast() }
 
-        let value: JSONValue = self.container[key.stringValue] ?? JSONNull()
+        let value: JSONValue = self.container[key.stringValue] ?? .null
         return __JSONDecoder(referencing: value, at: self.decoder.codingPath, options: self.decoder.options)
     }
 
@@ -1967,7 +1967,7 @@ private struct _JSONUnkeyedDecodingContainer : UnkeyedDecodingContainer {
                                                                     debugDescription: "Cannot get keyed decoding container -- found null value instead."))
         }
 
-        guard let dictionary = value as? JSONObject else {
+        guard case let .object(dictionary) = value else {
             throw DecodingError._typeMismatch(at: self.codingPath, expectation: JSONObject.self, reality: value)
         }
 
@@ -1993,7 +1993,7 @@ private struct _JSONUnkeyedDecodingContainer : UnkeyedDecodingContainer {
                                                                     debugDescription: "Cannot get keyed decoding container -- found null value instead."))
         }
 
-        guard let array = value as? JSONArray else {
+        guard case let .array(array) = value else {
             throw DecodingError._typeMismatch(at: self.codingPath, expectation: JSONArray.self, reality: value)
         }
 
@@ -2123,12 +2123,12 @@ private extension __JSONDecoder {
     func unbox(_ value: JSONValue, as type: Int.Type) throws -> Int? {
         guard !(value.isNull) else { return nil }
 
-        guard let number = value as? JSONNumber else {
+        guard let digits = value.digits else {
             throw DecodingError._typeMismatch(at: self.codingPath, expectation: type, reality: value)
         }
 
-        guard let result = Int(number.digitString) else {
-            throw DecodingError.dataCorrupted(DecodingError.Context(codingPath: self.codingPath, debugDescription: "Parsed JSON number <\(number)> does not fit in \(type)."))
+        guard let result = Int(digits) else {
+            throw DecodingError.dataCorrupted(DecodingError.Context(codingPath: self.codingPath, debugDescription: "Parsed JSON number <\(digits)> does not fit in \(type)."))
         }
 
         return result
@@ -2137,12 +2137,12 @@ private extension __JSONDecoder {
     func unbox(_ value: JSONValue, as type: Int8.Type) throws -> Int8? {
         guard !(value.isNull) else { return nil }
 
-        guard let number = value as? JSONNumber else {
+        guard let digits = value.digits else {
             throw DecodingError._typeMismatch(at: self.codingPath, expectation: type, reality: value)
         }
 
-        guard let result = Int8(number.digitString) else {
-            throw DecodingError.dataCorrupted(DecodingError.Context(codingPath: self.codingPath, debugDescription: "Parsed JSON number <\(number)> does not fit in \(type)."))
+        guard let result = Int8(digits) else {
+            throw DecodingError.dataCorrupted(DecodingError.Context(codingPath: self.codingPath, debugDescription: "Parsed JSON number <\(digits)> does not fit in \(type)."))
         }
 
         return result
@@ -2151,12 +2151,12 @@ private extension __JSONDecoder {
     func unbox(_ value: JSONValue, as type: Int16.Type) throws -> Int16? {
         guard !(value.isNull) else { return nil }
 
-        guard let number = value as? JSONNumber else {
+        guard let digits = value.digits else {
             throw DecodingError._typeMismatch(at: self.codingPath, expectation: type, reality: value)
         }
 
-        guard let result = Int16(number.digitString) else {
-            throw DecodingError.dataCorrupted(DecodingError.Context(codingPath: self.codingPath, debugDescription: "Parsed JSON number <\(number)> does not fit in \(type)."))
+        guard let result = Int16(digits) else {
+            throw DecodingError.dataCorrupted(DecodingError.Context(codingPath: self.codingPath, debugDescription: "Parsed JSON number <\(digits)> does not fit in \(type)."))
         }
 
         return result
@@ -2165,12 +2165,12 @@ private extension __JSONDecoder {
     func unbox(_ value: JSONValue, as type: Int32.Type) throws -> Int32? {
         guard !(value.isNull) else { return nil }
 
-        guard let number = value as? JSONNumber else {
+        guard let digits = value.digits else {
             throw DecodingError._typeMismatch(at: self.codingPath, expectation: type, reality: value)
         }
 
-        guard let result = Int32(number.digitString) else {
-            throw DecodingError.dataCorrupted(DecodingError.Context(codingPath: self.codingPath, debugDescription: "Parsed JSON number <\(number)> does not fit in \(type)."))
+        guard let result = Int32(digits) else {
+            throw DecodingError.dataCorrupted(DecodingError.Context(codingPath: self.codingPath, debugDescription: "Parsed JSON number <\(digits)> does not fit in \(type)."))
         }
 
         return result
@@ -2179,12 +2179,12 @@ private extension __JSONDecoder {
     func unbox(_ value: JSONValue, as type: Int64.Type) throws -> Int64? {
         guard !(value.isNull) else { return nil }
 
-        guard let number = value as? JSONNumber else {
+        guard let digits = value.digits else {
             throw DecodingError._typeMismatch(at: self.codingPath, expectation: type, reality: value)
         }
 
-        guard let result = Int64(number.digitString) else {
-            throw DecodingError.dataCorrupted(DecodingError.Context(codingPath: self.codingPath, debugDescription: "Parsed JSON number <\(number)> does not fit in \(type)."))
+        guard let result = Int64(digits) else {
+            throw DecodingError.dataCorrupted(DecodingError.Context(codingPath: self.codingPath, debugDescription: "Parsed JSON number <\(digits)> does not fit in \(type)."))
         }
 
         return result
@@ -2194,12 +2194,12 @@ private extension __JSONDecoder {
     func unbox(_ value: JSONValue, as type: UInt.Type) throws -> UInt? {
         guard !(value.isNull) else { return nil }
 
-        guard let number = value as? JSONNumber else {
+        guard let digits = value.digits else {
             throw DecodingError._typeMismatch(at: self.codingPath, expectation: type, reality: value)
         }
 
-        guard let result = UInt(number.digitString) else {
-            throw DecodingError.dataCorrupted(DecodingError.Context(codingPath: self.codingPath, debugDescription: "Parsed JSON number <\(number)> does not fit in \(type)."))
+        guard let result = UInt(digits) else {
+            throw DecodingError.dataCorrupted(DecodingError.Context(codingPath: self.codingPath, debugDescription: "Parsed JSON number <\(digits)> does not fit in \(type)."))
         }
 
         return result
@@ -2209,12 +2209,12 @@ private extension __JSONDecoder {
     func unbox(_ value: JSONValue, as type: UInt8.Type) throws -> UInt8? {
         guard !(value.isNull) else { return nil }
 
-        guard let number = value as? JSONNumber else {
+        guard let digits = value.digits else {
             throw DecodingError._typeMismatch(at: self.codingPath, expectation: type, reality: value)
         }
 
-        guard let result = UInt8(number.digitString) else {
-            throw DecodingError.dataCorrupted(DecodingError.Context(codingPath: self.codingPath, debugDescription: "Parsed JSON number <\(number)> does not fit in \(type)."))
+        guard let result = UInt8(digits) else {
+            throw DecodingError.dataCorrupted(DecodingError.Context(codingPath: self.codingPath, debugDescription: "Parsed JSON number <\(digits)> does not fit in \(type)."))
         }
 
         return result
@@ -2223,12 +2223,12 @@ private extension __JSONDecoder {
     func unbox(_ value: JSONValue, as type: UInt16.Type) throws -> UInt16? {
         guard !(value.isNull) else { return nil }
 
-        guard let number = value as? JSONNumber else {
+        guard let digits = value.digits else {
             throw DecodingError._typeMismatch(at: self.codingPath, expectation: type, reality: value)
         }
 
-        guard let result = UInt16(number.digitString) else {
-            throw DecodingError.dataCorrupted(DecodingError.Context(codingPath: self.codingPath, debugDescription: "Parsed JSON number <\(number)> does not fit in \(type)."))
+        guard let result = UInt16(digits) else {
+            throw DecodingError.dataCorrupted(DecodingError.Context(codingPath: self.codingPath, debugDescription: "Parsed JSON number <\(digits)> does not fit in \(type)."))
         }
 
         return result
@@ -2237,12 +2237,12 @@ private extension __JSONDecoder {
     func unbox(_ value: JSONValue, as type: UInt32.Type) throws -> UInt32? {
         guard !(value.isNull) else { return nil }
 
-        guard let number = value as? JSONNumber else {
+        guard let digits = value.digits else {
             throw DecodingError._typeMismatch(at: self.codingPath, expectation: type, reality: value)
         }
 
-        guard let result = UInt32(number.digitString) else {
-            throw DecodingError.dataCorrupted(DecodingError.Context(codingPath: self.codingPath, debugDescription: "Parsed JSON number <\(number)> does not fit in \(type)."))
+        guard let result = UInt32(digits) else {
+            throw DecodingError.dataCorrupted(DecodingError.Context(codingPath: self.codingPath, debugDescription: "Parsed JSON number <\(digits)> does not fit in \(type)."))
         }
 
         return result
@@ -2251,12 +2251,12 @@ private extension __JSONDecoder {
     func unbox(_ value: JSONValue, as type: UInt64.Type) throws -> UInt64? {
         guard !(value.isNull) else { return nil }
 
-        guard let number = value as? JSONNumber else {
+        guard let digits = value.digits else {
             throw DecodingError._typeMismatch(at: self.codingPath, expectation: type, reality: value)
         }
 
-        guard let result = UInt64(number.digitString) else {
-            throw DecodingError.dataCorrupted(DecodingError.Context(codingPath: self.codingPath, debugDescription: "Parsed JSON number <\(number)> does not fit in \(type)."))
+        guard let result = UInt64(digits) else {
+            throw DecodingError.dataCorrupted(DecodingError.Context(codingPath: self.codingPath, debugDescription: "Parsed JSON number <\(digits)> does not fit in \(type)."))
         }
 
         return result
@@ -2265,25 +2265,25 @@ private extension __JSONDecoder {
     func unbox(_ value: JSONValue, as type: Float.Type) throws -> Float? {
         guard !(value.isNull) else { return nil }
 
-        if let number = value as? JSONNumber {
+        if let digits = value.digits {
             // We are willing to return a Float by losing precision:
             // * If the original value was integral,
             //   * and the integral value was > Float.greatestFiniteMagnitude, we will fail
             //   * and the integral value was <= Float.greatestFiniteMagnitude, we are willing to lose precision past 2^24
             // * If it was a Float, you will get back the precise value
             // * If it was a Double or Decimal, you will get back the nearest approximation if it will fit
-            guard let result = Float(number.digitString) else {
-                throw DecodingError.dataCorrupted(DecodingError.Context(codingPath: self.codingPath, debugDescription: "Parsed JSON number \(number) does not fit in \(type)."))
+            guard let result = Float(digits) else {
+                throw DecodingError.dataCorrupted(DecodingError.Context(codingPath: self.codingPath, debugDescription: "Parsed JSON number \(digits) does not fit in \(type)."))
             }
 
             return result
-        } else if let jsonString = value as? JSONString,
+        } else if let string = try? value.stringValue(),
             case .convertFromString(let posInfString, let negInfString, let nanString) = self.options.nonConformingFloatDecodingStrategy {
-            if jsonString.string == posInfString {
+            if string == posInfString {
                 return Float.infinity
-            } else if jsonString.string == negInfString {
+            } else if string == negInfString {
                 return -Float.infinity
-            } else if jsonString.string == nanString {
+            } else if string == nanString {
                 return Float.nan
             }
         }
@@ -2294,19 +2294,19 @@ private extension __JSONDecoder {
     func unbox(_ value: JSONValue, as type: Double.Type) throws -> Double? {
         guard !(value.isNull) else { return nil }
 
-        if let number = value as? JSONNumber {
+        if let digits = value.digits {
             // We are always willing to return the number as a Double:
             // * If the original value was integral, it is guaranteed to fit in a Double; we are willing to lose precision past 2^53 if you encoded a UInt64 but requested a Double
             // * If it was a Float or Double, you will get back the precise value
             // * If it was Decimal, you will get back the nearest approximation
-            return Double(number.digitString)
-        } else if let jsonString = value as? JSONString,
+            return Double(digits)
+        } else if let string = try? value.stringValue(),
             case .convertFromString(let posInfString, let negInfString, let nanString) = self.options.nonConformingFloatDecodingStrategy {
-            if jsonString.string == posInfString {
+            if string == posInfString {
                 return Double.infinity
-            } else if jsonString.string == negInfString {
+            } else if string == negInfString {
                 return -Double.infinity
-            } else if jsonString.string == nanString {
+            } else if string == nanString {
                 return Double.nan
             }
         }
@@ -2325,7 +2325,7 @@ private extension __JSONDecoder {
     }
 
     func unbox(_ value: JSONValue, as type: Date.Type) throws -> Date? {
-        guard !(value is JSONNull) else { return nil }
+        guard !(value.isNull) else { return nil }
 
         switch self.options.dateDecodingStrategy {
         case .deferredToDate:
@@ -2369,7 +2369,7 @@ private extension __JSONDecoder {
     }
 
     func unbox(_ value: JSONValue, as type: Data.Type) throws -> Data? {
-        guard !(value is JSONNull) else { return nil }
+        guard !(value.isNull) else { return nil }
 
         switch self.options.dataDecodingStrategy {
         case .deferredToData:
@@ -2396,7 +2396,7 @@ private extension __JSONDecoder {
     }
 
     func unbox(_ value: JSONValue, as type: Decimal.Type) throws -> Decimal? {
-        guard !(value is JSONNull) else { return nil }
+        guard !(value.isNull) else { return nil }
 
         if let decimal = try? value.decimalValue() {
             return decimal
@@ -2407,10 +2407,10 @@ private extension __JSONDecoder {
     }
 
     func unbox<T>(_ value: JSONValue, as type: _JSONStringDictionaryDecodableMarker.Type) throws -> T? {
-        guard !(value is JSONNull) else { return nil }
+        guard !(value.isNull) else { return nil }
 
         var result: [String: Any] = [:]
-        guard let dict = value as? JSONObject else {
+        guard let dict = try? value.objectValue() else {
             throw DecodingError._typeMismatch(at: self.codingPath, expectation: type, reality: value)
         }
         let elementType = type.elementType
@@ -2542,18 +2542,26 @@ extension DecodingError {
     /// - returns: A string describing `value`.
     /// - precondition: `value` is one of the types below.
     private static func _typeDescription(of value: JSONValue) -> String {
-        if value.isNull {
-            return "a null value"
-        } else if value is JSONNumber /* FIXME: If swift-corelibs-foundation isn't updated to use NSNumber, this check will be necessary: || value is Int || value is Double */ {
-            return "a number"
-        } else if value is JSONString {
-            return "a string/data"
-        } else if value is JSONArray {
-            return "an array"
-        } else if value is JSONObject {
-            return "a dictionary"
-        } else {
-            return "\(type(of: value))"
+        switch value {
+        case .string: return "a string/data"
+        case .number: return "a number"
+        case .bool: return "a boolean"
+        case .object: return "a dictionary"
+        case .array: return "an array"
+        case .null: return "a null value"
         }
+//        if value.isNull {
+//            return "a null value"
+//        } else if value is JSONNumber /* FIXME: If swift-corelibs-foundation isn't updated to use NSNumber, this check will be necessary: || value is Int || value is Double */ {
+//            return "a number"
+//        } else if value is JSONString {
+//            return "a string/data"
+//        } else if value is JSONArray {
+//            return "an array"
+//        } else if value is JSONObject {
+//            return "a dictionary"
+//        } else {
+//            return "\(type(of: value))"
+//        }
     }
 }

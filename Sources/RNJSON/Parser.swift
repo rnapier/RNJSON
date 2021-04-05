@@ -22,30 +22,30 @@ public class JSONParser {
         switch token {
         case is JSONTokenArrayOpen:    return try parseArray(for: &tokens)
         case is JSONTokenObjectOpen:   return try parseObject(for: &tokens)
-        case is JSONTokenLiteralTrue:  return JSONBool(true)
-        case is JSONTokenLiteralFalse: return JSONBool(false)
-        case is JSONTokenLiteralNull:  return JSONNull()
-        case let t as JSONTokenString: return try JSONString(t)
-        case let t as JSONTokenNumber: return try JSONNumber(t)
+        case is JSONTokenLiteralTrue:  return .bool(true)
+        case is JSONTokenLiteralFalse: return .bool(false)
+        case is JSONTokenLiteralNull:  return .null
+        case let t as JSONTokenString: return try .init(t)
+        case let t as JSONTokenNumber: return try .init(t)
         default:                       throw JSONError.unexpectedToken(at: token.location, expected: [JSONTokenArrayOpen.self, JSONTokenObjectOpen.self, JSONTokenLiteralTrue.self, JSONTokenLiteralFalse.self, JSONTokenLiteralNull.self, JSONTokenString.self, JSONTokenNumber.self], found: token)
         }
     }
 
-    func parseArray<Tokens>(for tokens: inout Tokens) throws -> JSONArray where Tokens: Collection, Tokens.Element == JSONToken, Tokens.SubSequence == Tokens {
-        var elements = JSONArray()
+    func parseArray<Tokens>(for tokens: inout Tokens) throws -> JSONValue where Tokens: Collection, Tokens.Element == JSONToken, Tokens.SubSequence == Tokens {
+        var elements: JSONArray = []
 
         // Check the first token. It may be an empty list
         do {
             elements.append(try parseValue(for: &tokens))
         } catch let JSONError.unexpectedToken(at: _, expected: _, found: found) where found is JSONTokenArrayClose {
-            return elements
+            return .array(elements)
         }
 
         // Check the rest of the tokens
         while true {
             let token = try tokens.requireToken()
             switch token {
-            case is JSONTokenArrayClose: return elements
+            case is JSONTokenArrayClose: return .array(elements)
             case is JSONTokenListSeparator: elements.append(try parseValue(for: &tokens))
 
             default: throw JSONError.unexpectedToken(at: token.location,
@@ -55,17 +55,17 @@ public class JSONParser {
         }
     }
 
-    func parseObject<Tokens>(for tokens: inout Tokens) throws -> JSONObject where Tokens: Collection, Tokens.Element == JSONToken, Tokens.SubSequence == Tokens {
-        var object = JSONObject()
+    func parseObject<Tokens>(for tokens: inout Tokens) throws -> JSONValue where Tokens: Collection, Tokens.Element == JSONToken, Tokens.SubSequence == Tokens {
+        var object: JSONObject = []
 
         var token = try tokens.requireToken()
-        if token is JSONTokenObjectClose { return object }
+        if token is JSONTokenObjectClose { return .object(object) }
 
         while true {
             guard let stringToken = token as? JSONTokenString
             else { throw JSONError.unexpectedToken(at: token.location, expected: [JSONTokenString.self], found: token) }
 
-            let key = try JSONString(stringToken)
+            guard let key = stringToken.contents else { throw JSONError.dataCorrupted }
 
             let separator = try tokens.requireToken()
             guard separator is JSONTokenKeyValueSeparator else {
@@ -74,12 +74,12 @@ public class JSONParser {
                                                 found: separator)
             }
 
-            object.add(value: try parseValue(for: &tokens), for: key.string)
+            object.append((key: key, value: try parseValue(for: &tokens)))
 
             token = try tokens.requireToken()
 
             switch token {
-            case is JSONTokenObjectClose: return object
+            case is JSONTokenObjectClose: return .object(object)
             case is JSONTokenListSeparator: token = try tokens.requireToken()
             default: throw JSONError.unexpectedToken(at: token.location, expected: [JSONTokenObjectClose.self, JSONTokenListSeparator.self], found: token)
             }

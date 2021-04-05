@@ -20,7 +20,6 @@ final class RNJSONTests: XCTestCase {
         let result = try JSONParser().parse(data: Data(json.utf8))
         let expectedValue = "test"
 
-        XCTAssert(result is JSONString)
         XCTAssertEqual(try result.stringValue(), expectedValue)
     }
 
@@ -29,7 +28,6 @@ final class RNJSONTests: XCTestCase {
         let result = try JSONParser().parse(data: Data(json.utf8))
         let expectedValue = 1
 
-        XCTAssert(result is JSONNumber)
         XCTAssertEqual(try result.intValue(), expectedValue)
     }
 
@@ -38,7 +36,6 @@ final class RNJSONTests: XCTestCase {
         let result = try JSONParser().parse(data: Data(json.utf8))
         let expectedValue = 1.1
 
-        XCTAssert(result is JSONNumber)
         XCTAssertEqual(try result.doubleValue(), expectedValue)
     }
 
@@ -47,7 +44,6 @@ final class RNJSONTests: XCTestCase {
         let result = try JSONParser().parse(data: Data(json.utf8))
         let expectedValue = true
 
-        XCTAssert(result is JSONBool)
         XCTAssertEqual(try result.boolValue(), expectedValue)
     }
 
@@ -55,7 +51,6 @@ final class RNJSONTests: XCTestCase {
         let json = "{\"name\":\"Bob\",\"age\":43}"
         let result = try JSONParser().parse(data: Data(json.utf8))
 
-        XCTAssert(result is JSONObject)
         XCTAssertEqual(try result["name"]?.stringValue(), "Bob")
         XCTAssertEqual(try result["age"]?.intValue(), 43)
     }
@@ -64,7 +59,6 @@ final class RNJSONTests: XCTestCase {
         let json = "[1,2,3]"
         let result = try JSONParser().parse(data: Data(json.utf8))
 
-        XCTAssert(result is JSONArray)
         XCTAssertEqual(result.count, 3)
         XCTAssertEqual(try result[0].intValue(), 1)
         XCTAssertEqual(try result[1].intValue(), 2)
@@ -75,7 +69,6 @@ final class RNJSONTests: XCTestCase {
         let json = "null"
         let result = try JSONParser().parse(data: Data(json.utf8))
 
-        XCTAssert(result is JSONNull)
         XCTAssert(result.isNull)
     }
 
