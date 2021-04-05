@@ -10,9 +10,6 @@ public enum JSONError: Swift.Error {
     case missingValue
 }
 
-public typealias JSONKeyValues = [(key: String, value: JSON)]
-public typealias JSONArray = [JSON]
-
 public enum JSON {
     public static let formatter = NumberFormatter()
 
@@ -25,12 +22,18 @@ public enum JSON {
 
     public init(_ convertible: LosslessJSONConvertible) { self = convertible.jsonValue() }
     public init(_ convertible: JSONConvertible) throws { self = try convertible.jsonValue() }
+}
 
+// String
+extension JSON {
     public func stringValue() throws -> String {
         guard case let .string(value) = self else { throw JSONError.typeMismatch }
         return value
     }
+}
 
+// Number
+extension JSON {
     public func doubleValue() throws -> Double {
         guard case let .number(digits) = self, let value = Double(digits) else { throw JSONError.typeMismatch }
         return value
@@ -46,11 +49,46 @@ public enum JSON {
         return value
     }
 
+    func digits() throws -> String {
+        guard case let .number(digits) = self else { throw JSONError.typeMismatch }
+        return digits
+    }
+}
+
+// Bool
+extension JSON {
     public func boolValue() throws -> Bool {
         guard case let .bool(value) = self else { throw JSONError.typeMismatch }
         return value
     }
+}
 
+// Object
+
+public typealias JSONKeyValues = [(key: String, value: JSON)]
+
+extension JSONKeyValues {
+    public var keys: [String] { self.map(\.key) }
+
+    public subscript(_ key: String) -> JSON? {
+        get { self.first(where: { $0.key == key })?.value }
+        set {
+            if let value = newValue {
+                if let index = self.firstIndex(where: { $0.key == key}) {
+                    self[index] = (key: key, value: value)
+                } else {
+                    self.append((key: key, value: value))
+                }
+            } else {
+                if let index = self.firstIndex(where: { $0.key == key }) {
+                    self.remove(at: index)
+                }
+            }
+        }
+    }
+}
+
+extension JSON {
     public func objectValue() throws -> JSONKeyValues {
         guard case let .object(object) = self else { throw JSONError.typeMismatch }
         return object
@@ -59,11 +97,6 @@ public enum JSON {
     public func dictionaryValue() throws -> [String: JSON] {
         guard case let .object(object) = self else { throw JSONError.typeMismatch }
         return Dictionary(object, uniquingKeysWith: { first, _ in first })
-    }
-
-    public func arrayValue() throws -> [JSON] {
-        guard case let .array(array) = self else { throw JSONError.typeMismatch }
-        return array
     }
 
     public func getValue(for key: String) throws -> JSON {
@@ -79,6 +112,17 @@ public enum JSON {
     public subscript(_ key: String) -> JSON? {
         guard case let .object(object) = self else { return nil }
         return object.first(where: { $0.key == key })?.value
+    }
+}
+
+// Array
+
+public typealias JSONArray = [JSON]
+
+extension JSON {
+    public func arrayValue() throws -> [JSON] {
+        guard case let .array(array) = self else { throw JSONError.typeMismatch }
+        return array
     }
 
     public func count() throws -> Int {
@@ -98,15 +142,13 @@ public enum JSON {
     public subscript(_ index: Int) -> JSON {
         (try? getValue(at: index)) ?? .null
     }
+}
 
+// Null
+extension JSON {
     public var isNull: Bool {
         guard case .null = self else { return false }
         return true
-    }
-
-    func digits() throws -> String {
-        guard case let .number(digits) = self else { throw JSONError.typeMismatch }
-        return digits
     }
 }
 
@@ -145,26 +187,7 @@ extension JSON: Hashable {
     }
 }
 
-extension JSONKeyValues {
-    public var keys: [String] { self.map(\.key) }
-
-    public subscript(_ key: String) -> JSON? {
-        get { self.first(where: { $0.key == key })?.value }
-        set {
-            if let value = newValue {
-                if let index = self.firstIndex(where: { $0.key == key}) {
-                    self[index] = (key: key, value: value)
-                } else {
-                    self.append((key: key, value: value))
-                }
-            } else {
-                if let index = self.firstIndex(where: { $0.key == key }) {
-                    self.remove(at: index)
-                }
-            }
-        }
-    }
-}
+// JSONConvertible
 
 public protocol JSONConvertible {
     func jsonValue() throws -> JSON
@@ -291,141 +314,6 @@ extension JSONTokenNumber: JSONConvertible {
     }
 }
 
-
-//extension JSONValue {
-//    public init(fromAny value: Any) throws {
-//        switch value {
-//        case let json as JSONValue: self = json
-//        case let string as String: self = .string(string)
-//        case let number as NSNumber: self = .init(number)
-//        case let bool as Bool: self = .bool(bool)
-//        case let array as [Any]: self = .array(try array.map(JSONValue.init(fromAny:)))
-//        case is NSNull: self = .null
-//        case let object as [String: Any]: self = .object(try object.mapValues(JSONValue.init(fromAny:)))
-//        default:
-//            throw EncodingError.invalidValue(value, EncodingError.Context(codingPath: [],
-//                                                                          debugDescription: "Cannot encode value"))
-//        }
-//    }
-//
-//    public init(_ number: NSNumber)  { self = .number(Self.formatter.string(from: number)!) }
-//}
-
-//public protocol JSONValue {
-//    func stringValue() throws -> String
-//
-//    func doubleValue() throws -> Double
-//
-//    func decimalValue() throws -> Decimal
-//    func intValue() throws -> Int
-//
-//    func boolValue() throws -> Bool
-//
-//    func get(_ key: String) throws -> JSONValue
-//    func getAll(_ key: String) throws -> [JSONValue]
-//    subscript(_ key: String) -> JSONValue? { get }
-//
-//    var count: Int { get }
-//    func get(_ index: Int) throws -> JSONValue
-//    subscript(_ index: Int) -> JSONValue { get }
-//
-//    var isNull: Bool { get }
-//}
-
-
-//public struct JSONString: JSONValue {
-//    public var string: String
-//    public init(_ string: String) { self.string = string }
-//    public func stringValue() throws -> String { string }
-//
-//    public init(_ token: JSONTokenString) throws {
-//        // FIXME: Validate string
-//        guard let string = token.contents?
-//                .replacingOccurrences(of: "\\\\", with: "\\")
-//                .replacingOccurrences(of: "\\\"", with: "\"")
-//                .replacingOccurrences(of: "\\/", with: "/")
-//                .replacingOccurrences(of: "\\b", with: "\u{8}")
-//                .replacingOccurrences(of: "\\f", with: "\u{c}")
-//                .replacingOccurrences(of: "\\n", with: "\n")
-//                .replacingOccurrences(of: "\\r", with: "\r")
-//                .replacingOccurrences(of: "\\t", with: "\t")
-//        // TODO: Support \u syntax
-//        else { throw JSONError.dataCorrupted }
-//        self.init(string)
-//    }
-//}
-//
-//public struct JSONNumber: JSONValue {
-//    private static let formatter = NumberFormatter()
-//    public var digitString: String
-//    public init(digitString: String) { self.digitString = digitString }
-//    public init<Number: BinaryInteger>(_ number: Number) { self.digitString = Self.formatter.string(for: number)! }
-//    public init<Number: BinaryFloatingPoint>(_ number: Number) { self.digitString = Self.formatter.string(for: number)! }
-//    public init(_ number: NSNumber)  { self.digitString = Self.formatter.string(from: number)! }
-//    public init(_ decimal: Decimal)  {
-//        var decimal = decimal
-//        self.digitString = NSDecimalString(&decimal, nil)
-//    }
-//
-//    init(_ token: JSONTokenNumber) throws { self.digitString = try String(data: token.data, encoding: .utf8) ?? { throw JSONError.dataCorrupted }() } // FIXME: Validate
-//
-//    public func doubleValue() throws -> Double { try convert(to: Double.self) }
-//    public func decimalValue() throws -> Decimal { try Decimal(string: digitString) ?? { throw JSONError.typeMismatch }()}
-//    public func intValue() throws -> Int { try convert(to: Int.self) }
-//
-//    private func convert<N: LosslessStringConvertible>(to: N.Type) throws -> N {
-//        try N.init(digitString) ?? { throw JSONError.typeMismatch }()
-//    }
-//}
-//
-//public struct JSONBool: JSONValue {
-//    public var value: Bool
-//    public init(_ value: Bool) { self.value = value }
-//    public func boolValue() throws -> Bool { value }
-//}
-//
-//public struct JSONObject: JSONValue {
-//    public var keyValues: [(key: String, value: JSONValue)]
-//    public init(_ keyValues: [(key: String, value: JSONValue)] = []) { self.keyValues = keyValues }
-//    public init(_ dictionary: [String: JSONValue]) { self.init(Array(dictionary)) }
-//    public init(_ dictionary: NSDictionary) throws {
-//        if let dict = dictionary as? [String: JSONValue] {
-//            self.init(dict)
-//        } else {
-//            self.init(try dictionary.map { (key, value) in
-//                guard let key = key as? String else { throw JSONError.typeMismatch }
-//                return try (key, makeJSON(fromAny: value))
-//            })
-//        }
-//    }
-//
-//    public mutating func add(value: JSONValue, for key: String) {
-//        keyValues.append((key: key, value: value))
-//    }
-//
-//    public var count: Int { keyValues.count }
-//    public func get(_ key: String) throws -> JSONValue { try self[key] ?? { throw JSONError.missingValue }() }
-//    public func getAll(_ key: String) -> [JSONValue] { keyValues.filter({ $0.key == key }).map(\.value) }
-//
-//    public subscript(_ key: String) -> JSONValue? {
-//        get { keyValues.first(where: { $0.key == key })?.value }
-//        set {
-//            if let value = newValue {
-//                if let index = keyValues.firstIndex(where: { $0.key == key}) {
-//                    keyValues[index] = (key: key, value: value)
-//                } else {
-//                    keyValues.append((key: key, value: value))
-//                }
-//            } else {
-//                if let index = keyValues.firstIndex(where: { $0.key == key }) {
-//                    keyValues.remove(at: index)
-//                }
-//            }
-//        }
-//    }
-//
-//    public var keys: [String] { keyValues.map(\.key) }
-//}
 //
 //extension JSONObject: Collection {
 //    public struct ObjectIndex: Comparable {
@@ -468,15 +356,3 @@ extension JSONTokenNumber: JSONConvertible {
 //        (try? get(position)) ?? JSONNull()
 //    }
 //}
-//
-//public struct JSONNull: JSONValue {
-//    public var isNull: Bool { true }
-//}
-//
-
-//extension Dictionary where Key == String, Value == JSONValue {
-//    func jsonValue() -> JSONValue {
-//        return .object(Array(self))
-//    }
-//}
-
