@@ -24,11 +24,11 @@ public class JSONWriter {
 
     public let options: Options
 
-    public func encode(_ value: JSONValue) throws -> String {
+    public func encode(_ value: JSON) throws -> String {
         try encode(value, depth: 0)
     }
 
-    private func encode(_ value: JSONValue, depth: Int) throws -> String {
+    private func encode(_ value: JSON, depth: Int) throws -> String {
         switch value {
         case let .string(string): return escaped("\"\(string)\"")
         case let .number(digits): return digits
@@ -39,7 +39,7 @@ public class JSONWriter {
         }
     }
 
-    private func encode(object: [(key: String, value: JSONValue)], depth: Int) throws -> String {
+    private func encode(object: [(key: String, value: JSON)], depth: Int) throws -> String {
         var afterBrace = ""
         var outsideIndent = ""
         var insideIndent = ""
@@ -65,7 +65,7 @@ public class JSONWriter {
     }
 
     // FIXME: Doesn't pretty-print
-    private func encode(array: [JSONValue], depth: Int) throws -> String {
+    private func encode(array: [JSON], depth: Int) throws -> String {
         let values = try array.map { (value) in try encode(value) }
         let body = values.joined(separator: ",")
         return "[\(body)]"

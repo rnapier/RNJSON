@@ -9,14 +9,14 @@ import Foundation
 
 public class JSONParser {
 
-    public func parse(data: Data) throws -> JSONValue {
+    public func parse(data: Data) throws -> JSON {
         var tokens = try JSONTokenizer().allTokens(from: data)[...]
         let value = try parseValue(for: &tokens)
         guard tokens.isEmpty else { throw JSONError.unexpectedToken(at: tokens.first!.location, expected: [], found: tokens.first!) }
         return value
     }
 
-    private func parseValue<Tokens>(for tokens: inout Tokens) throws -> JSONValue where Tokens: Collection, Tokens.Element == JSONToken, Tokens.SubSequence == Tokens {
+    private func parseValue<Tokens>(for tokens: inout Tokens) throws -> JSON where Tokens: Collection, Tokens.Element == JSONToken, Tokens.SubSequence == Tokens {
         let token = try tokens.requireToken()
 
         switch token {
@@ -31,7 +31,7 @@ public class JSONParser {
         }
     }
 
-    func parseArray<Tokens>(for tokens: inout Tokens) throws -> JSONValue where Tokens: Collection, Tokens.Element == JSONToken, Tokens.SubSequence == Tokens {
+    func parseArray<Tokens>(for tokens: inout Tokens) throws -> JSON where Tokens: Collection, Tokens.Element == JSONToken, Tokens.SubSequence == Tokens {
         var elements: JSONArray = []
 
         // Check the first token. It may be an empty list
@@ -55,7 +55,7 @@ public class JSONParser {
         }
     }
 
-    func parseObject<Tokens>(for tokens: inout Tokens) throws -> JSONValue where Tokens: Collection, Tokens.Element == JSONToken, Tokens.SubSequence == Tokens {
+    func parseObject<Tokens>(for tokens: inout Tokens) throws -> JSON where Tokens: Collection, Tokens.Element == JSONToken, Tokens.SubSequence == Tokens {
         var object: JSONKeyValues = []
 
         var token = try tokens.requireToken()

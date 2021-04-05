@@ -4,17 +4,16 @@ import Foundation
 public enum JSONError: Swift.Error {
     case unexpectedByte(at: Int, found: [UInt8])
     case unexpectedToken(at: Int, expected: [JSONToken.Type], found: JSONToken)
-    case unknownValue(JSONValue)
     case dataTruncated
     case typeMismatch
     case dataCorrupted
     case missingValue
 }
 
-public typealias JSONKeyValues = [(key: String, value: JSONValue)]
-public typealias JSONArray = [JSONValue]
+public typealias JSONKeyValues = [(key: String, value: JSON)]
+public typealias JSONArray = [JSON]
 
-public enum JSONValue {
+public enum JSON {
     public static let formatter = NumberFormatter()
 
     case string(String)
@@ -57,17 +56,17 @@ public enum JSONValue {
         return object
     }
 
-    public func getValue(for key: String) throws -> JSONValue {
+    public func getValue(for key: String) throws -> JSON {
         guard let value = self[key] else { throw JSONError.missingValue }
         return value
     }
 
-    public func getAllValues(for key: String) throws -> [JSONValue] {
+    public func getAllValues(for key: String) throws -> [JSON] {
         guard case let .object(object) = self else { throw JSONError.typeMismatch }
         return object.filter({ $0.key == key }).map(\.value)
     }
 
-    public subscript(_ key: String) -> JSONValue? {
+    public subscript(_ key: String) -> JSON? {
         guard case let .object(object) = self else { return nil }
         return object.first(where: { $0.key == key })?.value
     }
@@ -80,18 +79,14 @@ public enum JSONValue {
         }
     }
 
-    public func getValue(at index: Int) throws -> JSONValue {
+    public func getValue(at index: Int) throws -> JSON {
         guard case let .array(array) = self else { throw JSONError.typeMismatch }
         guard array.indices.contains(index) else { throw JSONError.missingValue }
         return array[index]
     }
 
-    public subscript(_ index: Int) -> JSONValue {
-        do {
-            return try getValue(at: index)
-        } catch {
-            return .null
-        }
+    public subscript(_ index: Int) -> JSON {
+        (try? getValue(at: index)) ?? .null
     }
 
     public var isNull: Bool {
@@ -108,7 +103,7 @@ public enum JSONValue {
 extension JSONKeyValues {
     public var keys: [String] { self.map(\.key) }
 
-    public subscript(_ key: String) -> JSONValue? {
+    public subscript(_ key: String) -> JSON? {
         get { self.first(where: { $0.key == key })?.value }
         set {
             if let value = newValue {
@@ -127,19 +122,19 @@ extension JSONKeyValues {
 }
 
 public protocol JSONConvertible {
-    func jsonValue() throws -> JSONValue
+    func jsonValue() throws -> JSON
 }
 
 public protocol LosslessJSONConvertible: JSONConvertible {
-    func jsonValue() -> JSONValue
+    func jsonValue() -> JSON
 }
 
 extension String: LosslessJSONConvertible {
-    public func jsonValue() -> JSONValue { .string(self) }
+    public func jsonValue() -> JSON { .string(self) }
 }
 
 extension BinaryInteger {
-    public func jsonValue() -> JSONValue { .number(digits: JSONValue.formatter.string(for: self)!) }
+    public func jsonValue() -> JSON { .number(digits: JSON.formatter.string(for: self)!) }
 }
 
 extension Int: LosslessJSONConvertible {}
@@ -154,37 +149,37 @@ extension UInt32: LosslessJSONConvertible {}
 extension UInt64: LosslessJSONConvertible {}
 
 extension BinaryFloatingPoint {
-    public func jsonValue() -> JSONValue { .number(digits: JSONValue.formatter.string(for: self)!) }
+    public func jsonValue() -> JSON { .number(digits: JSON.formatter.string(for: self)!) }
 }
 
 extension Float: LosslessJSONConvertible {}
 extension Double: LosslessJSONConvertible {}
 
 extension Decimal: LosslessJSONConvertible {
-    public func jsonValue() -> JSONValue {
+    public func jsonValue() -> JSON {
         var decimal = self
         return .number(digits: NSDecimalString(&decimal, nil))
     }
 }
 
-extension JSONValue: LosslessJSONConvertible {
-    public func jsonValue() -> JSONValue { self }
+extension JSON: LosslessJSONConvertible {
+    public func jsonValue() -> JSON { self }
 }
 
 extension Bool: LosslessJSONConvertible {
-    public func jsonValue() -> JSONValue { .bool(self) }
+    public func jsonValue() -> JSON { .bool(self) }
 }
 
 extension Sequence where Element: LosslessJSONConvertible {
-    public func jsonValue() -> JSONValue { .array(self.map { $0.jsonValue() }) }
+    public func jsonValue() -> JSON { .array(self.map { $0.jsonValue() }) }
 }
 
 extension Sequence where Element: JSONConvertible {
-    public func jsonValue() throws -> JSONValue { .array(try self.map { try $0.jsonValue() }) }
+    public func jsonValue() throws -> JSON { .array(try self.map { try $0.jsonValue() }) }
 }
 
 extension NSArray: JSONConvertible {
-    public func jsonValue() throws -> JSONValue {
+    public func jsonValue() throws -> JSON {
         .array(try self.map {
             guard let value = $0 as? JSONConvertible else { throw JSONError.typeMismatch }
             return try value.jsonValue()
@@ -193,7 +188,7 @@ extension NSArray: JSONConvertible {
 }
 
 extension NSDictionary: JSONConvertible {
-    public func jsonValue() throws -> JSONValue {
+    public func jsonValue() throws -> JSON {
         guard let dict = self as? [String: JSONConvertible] else { throw JSONError.typeMismatch }
         return try dict.jsonValue()
     }
@@ -203,31 +198,31 @@ extension Array: LosslessJSONConvertible where Element: LosslessJSONConvertible 
 extension Array: JSONConvertible where Element: JSONConvertible {}
 
 public extension Sequence where Element == (key: String, value: LosslessJSONConvertible) {
-    func jsonValue() -> JSONValue {
+    func jsonValue() -> JSON {
         return .object(keyValues: self.map { ($0.key, $0.value.jsonValue()) } )
     }
 }
 
 public extension Sequence where Element == (key: String, value: JSONConvertible) {
-    func jsonValue() throws -> JSONValue {
+    func jsonValue() throws -> JSON {
         return .object(keyValues: try self.map { ($0.key, try $0.value.jsonValue()) } )
     }
 }
 
 public extension Dictionary where Key == String, Value: LosslessJSONConvertible {
-    func jsonValue() -> JSONValue {
+    func jsonValue() -> JSON {
         return .object(keyValues: self.map { ($0.key, $0.value.jsonValue()) } )
     }
 }
 
 public extension Dictionary where Key == String, Value: JSONConvertible {
-    func jsonValue() throws -> JSONValue {
+    func jsonValue() throws -> JSON {
         return .object(keyValues: try self.map { ($0.key, try $0.value.jsonValue()) } )
     }
 }
 
 extension JSONTokenString: JSONConvertible {
-    public func jsonValue() throws -> JSONValue {
+    public func jsonValue() throws -> JSON {
         guard let string = self.contents?
                 .replacingOccurrences(of: "\\\\", with: "\\")
                 .replacingOccurrences(of: "\\\"", with: "\"")
@@ -244,7 +239,7 @@ extension JSONTokenString: JSONConvertible {
 }
 
 extension JSONTokenNumber: JSONConvertible {
-    public func jsonValue() throws -> JSONValue {
+    public func jsonValue() throws -> JSON {
         // FIXME: Validate digitString
         guard let digits = String(data: self.data, encoding: .utf8) else { throw JSONError.dataCorrupted }
         return .number(digits: digits)
