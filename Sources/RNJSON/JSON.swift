@@ -56,6 +56,16 @@ public enum JSON {
         return object
     }
 
+    public func dictionaryValue() throws -> [String: JSON] {
+        guard case let .object(object) = self else { throw JSONError.typeMismatch }
+        return Dictionary(object, uniquingKeysWith: { first, _ in first })
+    }
+
+    public func arrayValue() throws -> [JSON] {
+        guard case let .array(array) = self else { throw JSONError.typeMismatch }
+        return array
+    }
+
     public func getValue(for key: String) throws -> JSON {
         guard let value = self[key] else { throw JSONError.missingValue }
         return value
@@ -97,6 +107,41 @@ public enum JSON {
     func digits() throws -> String {
         guard case let .number(digits) = self else { throw JSONError.typeMismatch }
         return digits
+    }
+}
+
+// Tuples (JSONKeyValues) can't directly conform to Equatable, so do this by hand
+extension JSON: Equatable {
+    public static func == (lhs: JSON, rhs: JSON) -> Bool {
+        switch (lhs, rhs) {
+        case (.string(let lhs), .string(let rhs)): return lhs == rhs
+        case (.number(digits: let lhs), .number(digits: let rhs)): return lhs == rhs
+        case (.bool(let lhs), .bool(let rhs)): return lhs == rhs
+        case (.object(keyValues: let lhs), .object(keyValues: let rhs)):
+            return lhs.count == rhs.count && lhs.elementsEqual(rhs, by: { lhs, rhs in
+                lhs.key == rhs.key && lhs.value == rhs.value
+            })
+        case (.array(let lhs), .array(let rhs)): return lhs == rhs
+        case (.null, .null): return true
+        default: return false
+        }
+    }
+}
+
+extension JSON: Hashable {
+    public func hash(into hasher: inout Hasher) {
+        switch self {
+        case .string(let string): hasher.combine(string)
+        case .number(digits: let digits): hasher.combine(digits)
+        case .bool(let value): hasher.combine(value)
+        case .object(keyValues: let keyValues):
+            for (key, value) in keyValues {
+                hasher.combine(key)
+                hasher.combine(value)
+            }
+        case .array(let array): hasher.combine(array)
+        case .null: hasher.combine(0)
+        }
     }
 }
 
