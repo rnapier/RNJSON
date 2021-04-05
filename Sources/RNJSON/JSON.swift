@@ -11,7 +11,7 @@ public enum JSONError: Swift.Error {
     case missingValue
 }
 
-public typealias JSONObject = [(key: String, value: JSONValue)]
+public typealias JSONKeyValues = [(key: String, value: JSONValue)]
 public typealias JSONArray = [JSONValue]
 
 public enum JSONValue {
@@ -20,7 +20,7 @@ public enum JSONValue {
     case string(String)
     case number(digits: String)
     case bool(Bool)
-    case object(JSONObject)
+    case object(keyValues: JSONKeyValues)
     case array(JSONArray)
     case null
 
@@ -52,7 +52,7 @@ public enum JSONValue {
         return value
     }
 
-    public func objectValue() throws -> JSONObject {
+    public func objectValue() throws -> JSONKeyValues {
         guard case let .object(object) = self else { throw JSONError.typeMismatch }
         return object
     }
@@ -105,7 +105,7 @@ public enum JSONValue {
     }
 }
 
-extension JSONObject {
+extension JSONKeyValues {
     public var keys: [String] { self.map(\.key) }
 
     public subscript(_ key: String) -> JSONValue? {
@@ -204,25 +204,25 @@ extension Array: JSONConvertible where Element: JSONConvertible {}
 
 public extension Sequence where Element == (key: String, value: LosslessJSONConvertible) {
     func jsonValue() -> JSONValue {
-        return .object(self.map { ($0.key, $0.value.jsonValue()) } )
+        return .object(keyValues: self.map { ($0.key, $0.value.jsonValue()) } )
     }
 }
 
 public extension Sequence where Element == (key: String, value: JSONConvertible) {
     func jsonValue() throws -> JSONValue {
-        return .object(try self.map { ($0.key, try $0.value.jsonValue()) } )
+        return .object(keyValues: try self.map { ($0.key, try $0.value.jsonValue()) } )
     }
 }
 
 public extension Dictionary where Key == String, Value: LosslessJSONConvertible {
     func jsonValue() -> JSONValue {
-        return .object(self.map { ($0.key, $0.value.jsonValue()) } )
+        return .object(keyValues: self.map { ($0.key, $0.value.jsonValue()) } )
     }
 }
 
 public extension Dictionary where Key == String, Value: JSONConvertible {
     func jsonValue() throws -> JSONValue {
-        return .object(try self.map { ($0.key, try $0.value.jsonValue()) } )
+        return .object(keyValues: try self.map { ($0.key, try $0.value.jsonValue()) } )
     }
 }
 

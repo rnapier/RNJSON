@@ -1249,7 +1249,7 @@ private class __JSONDecoder : Decoder {
         }
 
         guard case let .object(topContainer) = self.storage.topContainer else {
-            throw DecodingError._typeMismatch(at: self.codingPath, expectation: JSONObject.self, reality: self.storage.topContainer)
+            throw DecodingError._typeMismatch(at: self.codingPath, expectation: JSONKeyValues.self, reality: self.storage.topContainer)
         }
 
         let container = _JSONKeyedDecodingContainer<Key>(referencing: self, wrapping: topContainer)
@@ -1321,7 +1321,7 @@ private struct _JSONKeyedDecodingContainer<K : CodingKey> : KeyedDecodingContain
     private let decoder: __JSONDecoder
 
     /// A reference to the container we're reading from.
-    private let container: JSONObject
+    private let container: JSONKeyValues
 
     /// The path of coding keys taken to get to this point in decoding.
     private(set) public var codingPath: [CodingKey]
@@ -1329,7 +1329,7 @@ private struct _JSONKeyedDecodingContainer<K : CodingKey> : KeyedDecodingContain
     // MARK: - Initialization
 
     /// Initializes `self` by referencing the given decoder and container.
-    init(referencing decoder: __JSONDecoder, wrapping container: JSONObject) {
+    init(referencing decoder: __JSONDecoder, wrapping container: JSONKeyValues) {
         self.decoder = decoder
         switch decoder.options.keyDecodingStrategy {
         case .useDefaultKeys:
@@ -1337,11 +1337,11 @@ private struct _JSONKeyedDecodingContainer<K : CodingKey> : KeyedDecodingContain
         case .convertFromSnakeCase:
             // Convert the snake case keys in the container to camel case.
             // If we hit a duplicate key after conversion, then we'll use the first one we saw. Effectively an undefined behavior with JSON dictionaries.
-            self.container = JSONObject(container.map {
+            self.container = JSONKeyValues(container.map {
                 key, value in (RNJSONDecoder.KeyDecodingStrategy._convertFromSnakeCase(key), value)
             })
         case .custom(let converter):
-            self.container = JSONObject(container.map {
+            self.container = JSONKeyValues(container.map {
                 key, value in (converter(decoder.codingPath + [_JSONKey(stringValue: key, intValue: nil)]).stringValue, value)
             })
         }
@@ -1622,7 +1622,7 @@ private struct _JSONKeyedDecodingContainer<K : CodingKey> : KeyedDecodingContain
         }
 
         guard case let .object(dictionary) = value else {
-            throw DecodingError._typeMismatch(at: self.codingPath, expectation: JSONObject.self, reality: value)
+            throw DecodingError._typeMismatch(at: self.codingPath, expectation: JSONKeyValues.self, reality: value)
         }
 
         let container = _JSONKeyedDecodingContainer<NestedKey>(referencing: self.decoder, wrapping: dictionary)
@@ -1969,7 +1969,7 @@ private struct _JSONUnkeyedDecodingContainer : UnkeyedDecodingContainer {
         }
 
         guard case let .object(dictionary) = value else {
-            throw DecodingError._typeMismatch(at: self.codingPath, expectation: JSONObject.self, reality: value)
+            throw DecodingError._typeMismatch(at: self.codingPath, expectation: JSONKeyValues.self, reality: value)
         }
 
         self.currentIndex += 1
@@ -2600,6 +2600,6 @@ extension OrderedDictionary: Collection {
 
 extension OrderedDictionary: LosslessJSONConvertible {
     func jsonValue() -> JSONValue {
-        .object(storage.map { (key: $0.key, value: try! $0.value.jsonValue()) })
+        .object(keyValues: storage.map { (key: $0.key, value: try! $0.value.jsonValue()) })
     }
 }

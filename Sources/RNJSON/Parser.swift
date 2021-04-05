@@ -56,10 +56,10 @@ public class JSONParser {
     }
 
     func parseObject<Tokens>(for tokens: inout Tokens) throws -> JSONValue where Tokens: Collection, Tokens.Element == JSONToken, Tokens.SubSequence == Tokens {
-        var object: JSONObject = []
+        var object: JSONKeyValues = []
 
         var token = try tokens.requireToken()
-        if token is JSONTokenObjectClose { return .object(object) }
+        if token is JSONTokenObjectClose { return .object(keyValues: object) }
 
         while true {
             guard let stringToken = token as? JSONTokenString
@@ -79,7 +79,7 @@ public class JSONParser {
             token = try tokens.requireToken()
 
             switch token {
-            case is JSONTokenObjectClose: return .object(object)
+            case is JSONTokenObjectClose: return .object(keyValues: object)
             case is JSONTokenListSeparator: token = try tokens.requireToken()
             default: throw JSONError.unexpectedToken(at: token.location, expected: [JSONTokenObjectClose.self, JSONTokenListSeparator.self], found: token)
             }
