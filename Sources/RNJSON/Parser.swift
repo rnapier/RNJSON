@@ -8,10 +8,12 @@
 import Foundation
 
 public class JSONParser {
+    public init() {}
 
     public func parse(data: Data) throws -> JSON {
         var tokens = try JSONTokenizer().allTokens(from: data)[...]
         let value = try parseValue(for: &tokens)
+        tokens.removeWhitespace()
         guard tokens.isEmpty else { throw JSONError.unexpectedToken(at: tokens.first!.location, expected: [], found: tokens.first!) }
         return value
     }

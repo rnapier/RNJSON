@@ -24,6 +24,9 @@ let package = Package(
         .testTarget(
             name: "RNJSONTests",
             dependencies: ["RNJSON"],
-            resources: [Resource.copy("json.org")]),
+            resources: [
+                Resource.copy("Resources/json.org"),
+                Resource.process("Resources/ditto.json"),
+            ]),
     ]
 )

@@ -2411,7 +2411,7 @@ private extension __JSONDecoder {
         guard !(value.isNull) else { return nil }
 
         var result: [String: Any] = [:]
-        guard let dict = try? value.objectValue() else {
+        guard let dict = try? value.keyValues() else {
             throw DecodingError._typeMismatch(at: self.codingPath, expectation: type, reality: value)
         }
         let elementType = type.elementType

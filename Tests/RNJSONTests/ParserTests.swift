@@ -1,5 +1,5 @@
 import XCTest
-@testable import RNJSON
+import RNJSON
 
 extension JSONEncoder {
     func stringEncode<T>(_ value: T) throws -> String where T : Encodable {
@@ -72,41 +72,21 @@ final class RNJSONTests: XCTestCase {
         XCTAssert(result.isNull)
     }
 
-//
-//    func testNestedDecode() throws {
-//        let json = Data("""
-//        {
-//            "personal": {
-//                "name": "John Doe",
-//                "customer_id": "1234",
-//                "misc": {
-//                    "active": "true",
-//                    "addons": {
-//                        "country": "USA",
-//                        "state": "Michigan"
-//                    }
-//                }
-//            },
-//            "source": "main"
-//        }
-//        """.utf8)
-//
-//        let misc: [String: Any] = [
-//            "active": "true",
-//            "addons": [
-//                "country": "USA",
-//                "state": "Michigan"
-//            ]
-//        ]
-//
-//        let expected = Customer(personal: Personal(name: "John Doe",
-//                                                   customer_id: "1234", misc: try RNJSON(withAny: misc)), source: "main")
-//
-//        let parsed = try JSONDecoder().decode(Customer.self, from: json)
-//        XCTAssertEqual(parsed, expected)
-//    }
-//
-//    static var allTests = [
-//        ("testSimple", testNestedDecode),
-//    ]
+    func testDitto() throws {
+        let dittoURL = Bundle.module.url(forResource: "ditto", withExtension: "json")!
+        let json = try Data(contentsOf: dittoURL)
+        let ditto = try JSONParser().parse(data: json)
+
+        let w1 = try ditto.keyValues().last?.value.intValue()
+        XCTAssertEqual(w1, 40)
+
+        let w2 = try ditto["weight"]?.intValue()
+        XCTAssertEqual(w2, 40)
+
+        let w3 = try ditto.weight.intValue()
+        XCTAssertEqual(w3, 40)
+
+        let w4 = try ditto.dictionaryValue()["weight"]?.intValue()
+        XCTAssertEqual(w4, 40)
+    }
 }

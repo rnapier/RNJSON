@@ -10,6 +10,7 @@ public enum JSONError: Swift.Error {
     case missingValue
 }
 
+@dynamicMemberLookup
 public enum JSON {
     public static let formatter = NumberFormatter()
 
@@ -89,7 +90,7 @@ extension JSONKeyValues {
 }
 
 extension JSON {
-    public func objectValue() throws -> JSONKeyValues {
+    public func keyValues() throws -> JSONKeyValues {
         guard case let .object(object) = self else { throw JSONError.typeMismatch }
         return object
     }
@@ -112,6 +113,10 @@ extension JSON {
     public subscript(_ key: String) -> JSON? {
         guard case let .object(object) = self else { return nil }
         return object.first(where: { $0.key == key })?.value
+    }
+
+    public subscript(dynamicMember key: String) -> JSON {
+        self[key] ?? .null
     }
 }
 
