@@ -356,7 +356,10 @@ extension JSON: Codable {
         case .string(let string):
             var container = encoder.singleValueContainer()
             try container.encode(string)
-        case .number(let number):
+        case .number(let digits):
+            guard let number = Decimal(string: digits, locale: Locale(identifier: "en-US-POSIX")) else {
+                throw EncodingError.invalidValue(digits, .init(codingPath: encoder.codingPath, debugDescription: "Invalid digits: \(digits)"))
+            }
             var container = encoder.singleValueContainer()
             try container.encode(number)
         case .bool(let bool):
