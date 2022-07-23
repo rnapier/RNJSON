@@ -1201,6 +1201,10 @@ open class RNJSONDecoder {
             throw DecodingError.dataCorrupted(DecodingError.Context(codingPath: [], debugDescription: "The given data was not valid JSON.", underlyingError: error))
         }
 
+        return try decode(type, from: topLevel)
+    }
+
+    open func decode<T : Decodable>(_ type: T.Type, from topLevel: JSON) throws -> T {
         let decoder = __JSONDecoder(referencing: topLevel, options: self.options)
         guard let value = try decoder.unbox(topLevel, as: type) else {
             throw DecodingError.valueNotFound(type, DecodingError.Context(codingPath: [], debugDescription: "The given data did not contain a top-level value."))

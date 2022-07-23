@@ -131,4 +131,43 @@ final class RNJSONDecoderTests: XCTestCase {
         let result = try RNJSONDecoder().decode(Decimal.self, from: json)
         XCTAssertEqual(result, Decimal(123))
     }
+
+    func testSubDecode() throws {
+        struct Group: Codable, Equatable {
+            var id: String
+            var name: String
+        }
+
+        let json = Data("""
+            {
+            "groups": [
+              {
+                "id": "oruoiru",
+                "testProp": "rhorir",
+                "name": "* C-Level",
+                "description": "C-Level"
+              },
+              {
+                "id": "seese",
+                "testProp": "seses",
+                "name": "CDLevel",
+                "description": "CDLevel"
+              }
+            ],
+            "totalCount": 41
+            }
+            """.utf8)
+
+        let decoder = RNJSONDecoder()
+        let response = try decoder.decode(JSON.self, from: json)
+        let groupsArray = response.groups
+        let groups = try decoder.decode([Group].self, from: groupsArray)
+
+        let expected = [
+            Group(id: "oruoiru", name: "* C-Level"),
+            Group(id: "seese", name: "CDLevel")
+        ]
+
+        XCTAssertEqual(groups, expected)
+    }
 }

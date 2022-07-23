@@ -319,6 +319,66 @@ extension JSONTokenNumber: JSONConvertible {
     }
 }
 
+extension JSON: Codable {
+    struct Key: CodingKey, Hashable {
+        let stringValue: String
+        init(_ string: String) { self.stringValue = string }
+        init?(stringValue: String) { self.init(stringValue) }
+        var intValue: Int? { return nil }
+        init?(intValue: Int) { return nil }
+    }
+
+    public init(from decoder: Decoder) throws {
+        if let string = try? decoder.singleValueContainer().decode(String.self) { self = .string(string) }
+        else if let number = try? decoder.singleValueContainer().decode(Decimal.self) {
+            self = .number(digits: "\(number)") }
+        else if let object = try? decoder.container(keyedBy: Key.self) {
+            let result: JSONKeyValues = try object.allKeys.map { key in
+                (key: key.stringValue, value: try object.decode(JSON.self, forKey: key))
+            }
+            self = .object(keyValues: result)
+        }
+        else if var array = try? decoder.unkeyedContainer() {
+            var result: [JSON] = []
+            for _ in 0..<(array.count ?? 0) {
+                result.append(try array.decode(JSON.self))
+            }
+            self = .array(result)
+        }
+        else if let bool = try? decoder.singleValueContainer().decode(Bool.self) { self = .bool(bool) }
+        else if let isNull = try? decoder.singleValueContainer().decodeNil(), isNull { self = .null }
+        else { throw DecodingError.dataCorrupted(DecodingError.Context(codingPath: [],
+                                                                       debugDescription: "Unknown JSON type")) }
+    }
+
+    public func encode(to encoder: Encoder) throws {
+        switch self {
+        case .string(let string):
+            var container = encoder.singleValueContainer()
+            try container.encode(string)
+        case .number(let number):
+            var container = encoder.singleValueContainer()
+            try container.encode(number)
+        case .bool(let bool):
+            var container = encoder.singleValueContainer()
+            try container.encode(bool)
+        case .object(let object):
+            var container = encoder.container(keyedBy: Key.self)
+            for (key, value) in object {
+                try container.encode(value, forKey: Key(key))
+            }
+        case .array(let array):
+            var container = encoder.unkeyedContainer()
+            for value in array {
+                try container.encode(value)
+            }
+        case .null:
+            var container = encoder.singleValueContainer()
+            try container.encodeNil()
+        }
+    }
+}
+
 //
 //extension JSONObject: Collection {
 //    public struct ObjectIndex: Comparable {
