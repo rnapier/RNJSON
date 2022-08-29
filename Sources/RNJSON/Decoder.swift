@@ -1,6 +1,12 @@
 //
 // This is a derived work from JSONEncoder.swift from the Swift stdlib with major
 // modifications to use RNJSON rather than JSONSerialization.
+
+//
+
+// https://github.com/apple/swift-corelibs-foundation/blame/883dfb8e48c3bd4f167ffedeb8e6cfe2eefecf1f/Sources/Foundation/JSONEncoder.swift
+//
+
 //
 // The following is the original copyright notice from Swift stdlib:
     //===----------------------------------------------------------------------===//

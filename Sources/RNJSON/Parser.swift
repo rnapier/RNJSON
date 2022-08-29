@@ -92,7 +92,7 @@ public class JSONParser {
 
 private extension Collection where Element == JSONToken, SubSequence == Self {
     mutating func removeWhitespace() {
-        while let byte = self.first, byte.isIgnored {
+        while let token = self.first, token.isIgnored {
             self.removeFirst()
         }
     }
